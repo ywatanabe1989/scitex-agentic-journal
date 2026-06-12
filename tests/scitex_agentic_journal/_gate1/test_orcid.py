@@ -7,21 +7,23 @@ Discipline (STX-NM001-003 / PA-306, "no mocks"):
   never inject a fake session object.
 - For hermetic CI we spin up a **real local HTTP server** (stdlib
   ``http.server`` on an ephemeral port) that serves real JSON files
-  out of ``tests/scitex_agentic_journal/_fixtures/``. The resolver
-  hits it over real TCP via the legitimate ``base_url`` config seam
-  that the CLI will also use (e.g. to point at ``sandbox.orcid.org``).
+  out of ``tests/scitex_agentic_journal/_gate1/_fixtures/``. The
+  resolver hits it over real TCP via the legitimate ``base_url``
+  config seam that the CLI will also use (e.g. to point at
+  ``sandbox.orcid.org``).
 - One test (``test_real_orcid_org_record_resolves_for_carberry``) talks
   to the real ``pub.orcid.org``; it is marked ``@pytest.mark.network``
   and skipped unless ``SCITEX_RUN_NETWORK_TESTS=1``.
 
 Structure (STX-TQ rules):
 
-- Every test carries explicit ``# Arrange`` / ``# Act`` / ``# Assert``
-  markers.
+- Every test carries the three ``# Arrange`` / ``# Act`` / ``# Assert``
+  marker comments on separate lines in that order (TQ002).
 - Each test asserts exactly one fact; multi-assertion tests are split
-  by behaviour.
+  by behaviour (TQ007). ``with pytest.raises(...)`` counts as one
+  assertion and is never paired with a trailing ``assert``.
 - Test names spell out the subject, condition, and expected behaviour
-  (≥3 word-tokens after ``test_``).
+  (TQ003: ≥3 word-tokens after ``test_``).
 """
 
 from __future__ import annotations
@@ -157,15 +159,17 @@ def test_normalize_orcid_accepts_x_check_digit_unchanged() -> None:
 def test_normalize_orcid_rejects_unparseable_garbage_string() -> None:
     # Arrange
     garbage = "not-an-orcid"
-    # Act / Assert
+    # Act
+    # Assert
     with pytest.raises(GateFailure):
         normalize_orcid(garbage)
 
 
 def test_normalize_orcid_rejects_bad_checksum_digit() -> None:
-    # Arrange — last digit deliberately wrong (Carberry is …0097, this is …0098).
+    # Arrange
     bad_checksum = "0000-0002-1825-0098"
-    # Act / Assert
+    # Act
+    # Assert
     with pytest.raises(GateFailure):
         normalize_orcid(bad_checksum)
 
@@ -301,9 +305,10 @@ def test_verify_orcid_falls_back_to_family_name_for_display(
 def test_verify_orcid_raises_when_record_endpoint_returns_404(
     orcid_fixture_server,
 ) -> None:
-    # Arrange — nothing registered, so every request 404s.
+    # Arrange
     base = orcid_fixture_server({})
-    # Act / Assert
+    # Act
+    # Assert
     with pytest.raises(GateFailure):
         verify_orcid("0000-0002-1825-0097", base_url=base)
 
@@ -313,11 +318,10 @@ def test_verify_orcid_raises_when_record_endpoint_returns_500(
 ) -> None:
     # Arrange
     base = orcid_fixture_server(
-        {
-            "/v3.0/0000-0002-1825-0097/record": (500, "boom"),
-        }
+        {"/v3.0/0000-0002-1825-0097/record": (500, "boom")}
     )
-    # Act / Assert
+    # Act
+    # Assert
     with pytest.raises(GateFailure):
         verify_orcid("0000-0002-1825-0097", base_url=base)
 
@@ -327,11 +331,10 @@ def test_verify_orcid_raises_when_record_body_is_not_json(
 ) -> None:
     # Arrange
     base = orcid_fixture_server(
-        {
-            "/v3.0/0000-0002-1825-0097/record": (200, b"<html>nope</html>"),
-        }
+        {"/v3.0/0000-0002-1825-0097/record": (200, b"<html>nope</html>")}
     )
-    # Act / Assert
+    # Act
+    # Assert
     with pytest.raises(GateFailure):
         verify_orcid("0000-0002-1825-0097", base_url=base)
 
@@ -348,22 +351,22 @@ def test_verify_orcid_raises_when_record_shape_lacks_person_object(
             ),
         }
     )
-    # Act / Assert
+    # Act
+    # Assert
     with pytest.raises(GateFailure):
         verify_orcid("0000-0002-1825-0097", base_url=base)
 
 
 def test_verify_orcid_raises_when_orcid_api_host_is_unreachable() -> None:
-    # Arrange — pick a port we know is closed.
+    # Arrange
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
         closed_port = s.getsockname()[1]
-    # Act / Assert
+    closed_base = f"http://127.0.0.1:{closed_port}/v3.0"
+    # Act
+    # Assert
     with pytest.raises(GateFailure):
-        verify_orcid(
-            "0000-0002-1825-0097",
-            base_url=f"http://127.0.0.1:{closed_port}/v3.0",
-        )
+        verify_orcid("0000-0002-1825-0097", base_url=closed_base)
 
 
 # ---------------------------------------------------------------------------
@@ -377,9 +380,9 @@ def test_verify_orcid_raises_when_orcid_api_host_is_unreachable() -> None:
     reason="opt in by setting SCITEX_RUN_NETWORK_TESTS=1",
 )
 def test_real_orcid_org_record_resolves_for_carberry() -> None:
-    # Arrange — well-known public ORCID iD (Josiah Carberry).
+    # Arrange
     iD = "0000-0002-1825-0097"
     # Act
     rec = verify_orcid(iD)
-    # Assert — only check structural truth, not display-name shape.
+    # Assert
     assert rec.display_name

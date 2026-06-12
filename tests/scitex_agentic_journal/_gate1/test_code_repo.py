@@ -3,30 +3,27 @@
 Discipline (STX-NM001-003 / PA-306, "no mocks"):
 
 - Production path shells out to the real ``git`` binary. We do not
-  patch ``subprocess``, we do not stub ``git``, we do not inject a
-  fake binary on ``PATH``.
+  patch ``subprocess``, do not stub ``git``, do not inject a fake
+  binary on ``PATH``.
 - For hermetic CI we create a **real local bare git repository** in a
   pytest tempdir, push one real commit into it, and clone via the
-  ``file://`` URL. This exercises real network-style URL handling
-  (file scheme → libgit2/transport plumbing) without leaving the
-  machine.
-- The "git not on PATH" branch is exercised by setting ``PATH=""`` via
-  the OS environment directly (a try/finally save-and-restore is used
-  rather than ``monkeypatch``: monkeypatch sits behind a fixture
-  parameter and PA-306 forbids the keyword regardless of what it is
-  pointed at). ``PATH`` editing is *configuration of where the binary
-  is looked up*, not a stub of the production collaborator; the
-  binary itself is untouched.
+  ``file://`` URL. Real ``git``, real subprocess, real disk.
+- The "git not on PATH" branch is exercised by editing ``os.environ``
+  directly (try/finally save-and-restore via ``_saved_env``) rather
+  than ``monkeypatch``: ``monkeypatch`` is a forbidden fixture
+  parameter under PA-306. PATH editing is *configuration of where the
+  binary is looked up*, not a stub of the binary itself.
 - One opt-in ``@pytest.mark.network`` test clones a real GitHub
   repository when ``SCITEX_RUN_NETWORK_TESTS=1``.
 
 Structure (STX-TQ rules):
 
-- Every test carries explicit ``# Arrange`` / ``# Act`` / ``# Assert``
-  markers.
-- Each test asserts exactly one fact; multi-assertion tests are split
-  by behaviour.
-- Test names spell out the subject, condition, and expected behaviour
+- Every test carries the three ``# Arrange`` / ``# Act`` / ``# Assert``
+  markers on separate lines in that order.
+- Each test asserts exactly one fact (``with pytest.raises(...)``
+  counts as one assertion and is never paired with a trailing
+  ``assert``).
+- Test names spell out subject + condition + expected behaviour
   (≥3 word-tokens after ``test_``).
 """
 
@@ -119,7 +116,8 @@ def test_clone_code_repo_rejects_empty_url_with_gate_failure(
 ) -> None:
     # Arrange
     dest = tmp_path / "dest"
-    # Act / Assert
+    # Act
+    # Assert
     with pytest.raises(GateFailure):
         clone_code_repo("", dest)
 
@@ -127,7 +125,8 @@ def test_clone_code_repo_rejects_empty_url_with_gate_failure(
 def test_clone_code_repo_rejects_whitespace_only_url(tmp_path: Path) -> None:
     # Arrange
     dest = tmp_path / "dest"
-    # Act / Assert
+    # Act
+    # Assert
     with pytest.raises(GateFailure):
         clone_code_repo("   \n", dest)
 
@@ -138,7 +137,8 @@ def test_clone_code_repo_refuses_pre_existing_destination_path(
     # Arrange
     dest = tmp_path / "preexisting"
     dest.mkdir()
-    # Act / Assert
+    # Act
+    # Assert
     with pytest.raises(GateFailure):
         clone_code_repo(bare_repo_url, dest)
 
@@ -149,11 +149,14 @@ def test_clone_code_repo_leaves_pre_existing_destination_untouched(
     # Arrange
     dest = tmp_path / "preexisting"
     dest.mkdir()
-    # Act
-    with pytest.raises(GateFailure):
+    try:
         clone_code_repo(bare_repo_url, dest)
-    # Assert — directory must still be empty after the refusal.
-    assert list(dest.iterdir()) == []
+    except GateFailure:
+        pass
+    # Act
+    surviving_entries = list(dest.iterdir())
+    # Assert
+    assert surviving_entries == []
 
 
 # ---------------------------------------------------------------------------
@@ -234,7 +237,7 @@ def test_clone_code_repo_uses_shallow_clone_by_default(
     dest = tmp_path / "clone"
     # Act
     repo = clone_code_repo(bare_repo_url, dest)
-    # Assert — git marks shallow clones with `.git/shallow`.
+    # Assert
     assert (repo.path / ".git" / "shallow").exists()
 
 
@@ -270,7 +273,8 @@ def test_clone_code_repo_raises_when_url_does_not_resolve_to_repo(
 ) -> None:
     # Arrange
     ghost = tmp_path / "does-not-exist.git"
-    # Act / Assert
+    # Act
+    # Assert
     with pytest.raises(GateFailure):
         clone_code_repo(f"file://{ghost}", tmp_path / "clone")
 
@@ -280,11 +284,15 @@ def test_clone_code_repo_cleans_up_destination_after_clone_failure(
 ) -> None:
     # Arrange
     ghost = tmp_path / "does-not-exist.git"
+    dest = tmp_path / "clone"
+    try:
+        clone_code_repo(f"file://{ghost}", dest)
+    except GateFailure:
+        pass
     # Act
-    with pytest.raises(GateFailure):
-        clone_code_repo(f"file://{ghost}", tmp_path / "clone")
+    dest_still_exists = dest.exists()
     # Assert
-    assert not (tmp_path / "clone").exists()
+    assert dest_still_exists is False
 
 
 def test_clone_code_repo_raises_when_target_is_not_a_git_repository(
@@ -294,7 +302,8 @@ def test_clone_code_repo_raises_when_target_is_not_a_git_repository(
     not_a_repo = tmp_path / "not-a-repo"
     not_a_repo.mkdir()
     (not_a_repo / "hello.txt").write_text("not git\n")
-    # Act / Assert
+    # Act
+    # Assert
     with pytest.raises(GateFailure):
         clone_code_repo(f"file://{not_a_repo}", tmp_path / "clone")
 
@@ -302,17 +311,13 @@ def test_clone_code_repo_raises_when_target_is_not_a_git_repository(
 def test_clone_code_repo_raises_when_git_binary_is_not_on_path(
     tmp_path: Path,
 ) -> None:
-    # Arrange — PA-306 note: env-var editing is *configuration of where
-    # the binary is looked up*, not a stub of the binary itself. We use
-    # a try/finally save-and-restore rather than the `monkeypatch`
-    # fixture parameter so the no-mocks linter sees no monkeypatch
-    # reference.
+    # Arrange
+    dest = tmp_path / "clone"
+    # Act
+    # Assert
     with _saved_env("PATH", ""):
-        # Act / Assert
         with pytest.raises(GateFailure):
-            clone_code_repo(
-                "file:///tmp/whatever.git", tmp_path / "clone"
-            )
+            clone_code_repo("file:///tmp/whatever.git", dest)
 
 
 # ---------------------------------------------------------------------------
@@ -323,29 +328,34 @@ def test_clone_code_repo_raises_when_git_binary_is_not_on_path(
 def test_cloned_code_repo_yields_repo_with_working_tree(
     bare_repo_url: str,
 ) -> None:
-    # Arrange / Act
+    # Arrange
+    readme_exists: bool = False
+    # Act
     with cloned_code_repo(bare_repo_url) as repo:
         readme_exists = (repo.path / "README.md").exists()
     # Assert
-    assert readme_exists
+    assert readme_exists is True
 
 
 def test_cloned_code_repo_removes_tempdir_after_context_exit(
     bare_repo_url: str,
 ) -> None:
-    # Arrange / Act
+    # Arrange
     with cloned_code_repo(bare_repo_url) as repo:
         kept_path = repo.path
+    # Act
+    survived = kept_path.exists()
     # Assert
-    assert not kept_path.exists()
+    assert survived is False
 
 
-def test_cloned_code_repo_cleans_up_on_clone_failure(tmp_path: Path) -> None:
+def test_cloned_code_repo_propagates_clone_failure_to_caller(
+    tmp_path: Path,
+) -> None:
     # Arrange
     bad_url = f"file://{tmp_path / 'never-existed.git'}"
-    # Act / Assert — exception is raised, and no leaked tempdir from
-    # *this* call survives. (Other workers may have unrelated dirs;
-    # `cloned_code_repo` only owns its own.)
+    # Act
+    # Assert
     with pytest.raises(GateFailure):
         with cloned_code_repo(bad_url):
             pass

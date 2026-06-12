@@ -46,7 +46,13 @@ _CANONICAL_HEADER = (
     "open publishing on top of Clew."
 )
 
+# IMPORTANT: keep the literal ``v{__version__}`` token here so the
+# audit's ``--help`` parser (§4 `_check_root_help_has_version`) sees a
+# `vX.Y.Z` token in either ``cmd.help`` or ``cmd.epilog``. The token
+# is fed by ``importlib.metadata.version()`` via ``__version__`` so it
+# always tracks the installed distribution.
 _HELP_EPILOG = (
+    f"scitex-agentic-journal v{__version__}. "
     "Configuration is read from $SCITEX_AGENTIC_JOURNAL_CONFIG, then "
     "./config.yaml, then ~/.scitex/agentic-journal/config.yaml. Run "
     "`scitex-agentic-journal --help-recursive` for the full subcommand "
@@ -274,8 +280,20 @@ def publish(
     default=0,
     help="Increase verbosity (-v, -vv, -vvv).",
 )
+@click.option(
+    "--json",
+    "as_json_local",
+    is_flag=True,
+    default=False,
+    help=(
+        "Emit machine-readable JSON output. Required by §1a / §2 for "
+        "every `list` verb (read verbs MUST support --json)."
+    ),
+)
 @click.pass_context
-def list_python_apis(ctx: click.Context, verbose: int) -> None:
+def list_python_apis(
+    ctx: click.Context, verbose: int, as_json_local: bool
+) -> None:
     """List every importable Python API exposed by this package.
 
     The audit (§1a) requires this command at the top level so agents
@@ -289,7 +307,8 @@ def list_python_apis(ctx: click.Context, verbose: int) -> None:
     del verbose  # currently unused; accepted for ecosystem-CLI parity.
     apis = list(_iter_python_api_names("scitex_agentic_journal"))
     apis.sort()
-    if ctx.find_root().obj and ctx.find_root().obj.get("as_json"):
+    root_obj = ctx.find_root().obj or {}
+    if as_json_local or root_obj.get("as_json"):
         click.echo(json.dumps({"apis": apis}, indent=2))
         return
     for name in apis:
@@ -340,8 +359,18 @@ def mcp() -> None:
 
 
 @mcp.command(name="list-tools")
+@click.option(
+    "--json",
+    "as_json_local",
+    is_flag=True,
+    default=False,
+    help=(
+        "Emit machine-readable JSON output. Required by §1a / §2 for "
+        "every `list` verb."
+    ),
+)
 @click.pass_context
-def mcp_list_tools(ctx: click.Context) -> None:
+def mcp_list_tools(ctx: click.Context, as_json_local: bool) -> None:
     """List the MCP tools this package exposes.
 
     Today the list is empty: the MCP server lands post-MVP. The
@@ -351,10 +380,11 @@ def mcp_list_tools(ctx: click.Context) -> None:
     Example:
 
       $ scitex-agentic-journal mcp list-tools
-      (no MCP tools registered — see post-MVP roadmap)
+      $ scitex-agentic-journal mcp list-tools --json
     """
     tools: list[str] = []
-    if ctx.find_root().obj and ctx.find_root().obj.get("as_json"):
+    root_obj = ctx.find_root().obj or {}
+    if as_json_local or root_obj.get("as_json"):
         click.echo(json.dumps({"tools": tools}, indent=2))
         return
     if not tools:
@@ -362,6 +392,82 @@ def mcp_list_tools(ctx: click.Context) -> None:
         return
     for tool in tools:  # pragma: no cover - reached when tools exist
         click.echo(tool)
+
+
+# ---------------------------------------------------------------------------
+# Shell completion (install-shell-completion + print-shell-completion).
+#
+# The audit (§1a) requires both commands at the top level so
+# `<pkg> <TAB>` produces something. We wire them via the canonical
+# helper exposed by scitex-dev. If for any reason scitex-dev is not
+# importable in this environment, we degrade to local stubs that
+# return the same exit codes so the surface stays present and
+# discoverable by agents (the install path itself is a no-op in that
+# fallback).
+# ---------------------------------------------------------------------------
+
+try:
+    from scitex_dev._cli._completion import attach_shell_completion
+
+    attach_shell_completion(main, prog_name="scitex-agentic-journal")
+except Exception:  # pragma: no cover - degraded path
+
+    @main.command(name="print-shell-completion")
+    @click.argument(
+        "shell",
+        type=click.Choice(["bash", "zsh", "fish"], case_sensitive=False),
+    )
+    def print_shell_completion(shell: str) -> None:
+        """Print the shell-completion script (degraded fallback).
+
+        Wires via `scitex_dev._cli._completion.attach_shell_completion`
+        when scitex-dev is importable; this fallback stub keeps the
+        command surface present so agents introspecting the CLI do not
+        see it disappear.
+
+        Example:
+
+          $ scitex-agentic-journal print-shell-completion bash
+        """
+        click.echo(
+            f"# scitex-dev._cli._completion is not available — "
+            f"completion script for {shell} unavailable in this env."
+        )
+
+    @main.command(name="install-shell-completion")
+    @click.argument(
+        "shell",
+        type=click.Choice(["bash", "zsh", "fish"], case_sensitive=False),
+    )
+    @click.option(
+        "--dry-run/--no-dry-run",
+        default=False,
+        show_default=True,
+        help="Print what would be done without modifying the shell config.",
+    )
+    @click.option(
+        "--yes",
+        "-y",
+        "assume_yes",
+        is_flag=True,
+        default=False,
+        help="Assume yes to confirmation prompts.",
+    )
+    def install_shell_completion(
+        shell: str, dry_run: bool, assume_yes: bool
+    ) -> None:
+        """Install the shell-completion script (degraded fallback).
+
+        Example:
+
+          $ scitex-agentic-journal install-shell-completion bash --dry-run
+          $ scitex-agentic-journal install-shell-completion zsh --yes
+        """
+        del dry_run, assume_yes
+        raise click.ClickException(
+            "scitex-dev._cli._completion is not importable — install "
+            f"`scitex-dev` to enable shell-completion install for {shell}."
+        )
 
 
 if __name__ == "__main__":  # pragma: no cover

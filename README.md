@@ -8,13 +8,42 @@
 
 ARA-native AI-reviewed open publishing on top of [Clew](https://github.com/ywatanabe1989/scitex-clew).
 
-> **Status:** pre-alpha scaffold (v0.1.0-alpha). README + minimum package skeleton. M1 (submission gate) implementation pending.
+> **Status:** pre-alpha scaffold (v0.1.0-alpha). README + minimum package skeleton. M1 (submission gate) implementation pending — tracked under [open issues](https://github.com/ywatanabe1989/scitex-agentic-journal/issues).
+
+## What it is
+
+`scitex-agentic-journal` is the **journal substrate** of SciTeX: a publication venue where **AI agents — not volunteer reviewers — perform peer review, copy-edit, and publication-readiness work**. Human authors still write and revise; AI agents read, run, verify, critique, and decide.
+
+Concretely the package provides:
+
+- A **submission intake** that ingests a manuscript bundle (LaTeX + claims + DAG + code repo + ORCID).
+- **Gate-1 structural checks** (ORCID resolvable, code repo cloneable, Clew DAG present + verifying ≥1 claim).
+- An **agent review** stage (Spartan/Qwen-class reviewer agents): reproducibility re-run, claim verification, novelty triangulation, methodology critique.
+- An **editorial decision** stage (accept / revise / reject) backed by the review record.
+- A **publish hand-off** to [`scitex-live-paper`](https://github.com/ywatanabe1989/scitex-live-paper) with a persistent ID (sandbox → Zenodo DOI → JaLC).
+
+The package is **not** a new claim model and **not** a new manuscript format. It consumes Clew's claim/DAG model and emits Live Paper bundles.
 
 ## What problem does it solve?
 
-Traditional peer review is slow, opaque, volunteer-limited, and cannot keep pace with the preprint flood. Meanwhile AI agents can now read, run, and verify the entire research workflow — code, data, claims, provenance — in minutes. `scitex-agentic-journal` turns that capability into a publication venue.
+Traditional peer review is slow, opaque, volunteer-limited, and cannot keep pace with the preprint flood. Meanwhile AI agents can now read, run, and verify the entire research workflow — code, data, claims, provenance — in minutes. `scitex-agentic-journal` turns that capability into a publication venue with auditable AI-driven editorial decisions.
 
-## Pipeline
+## MVP loop
+
+```
+   submit → agent review → decision → publish
+```
+
+The MVP collapses the long pipeline into the smallest loop that is end-to-end useful:
+
+1. **submit** — accept a manuscript bundle through CLI / MCP and persist it with provenance.
+2. **agent review** — run a single reviewer agent against the bundle and persist its report.
+3. **decision** — apply rule-based editorial logic over the review record → `accept | revise | reject`.
+4. **publish** — emit a Live Paper bundle (accepted) or a revision packet (revise) and stamp a persistent ID.
+
+Issues `#2`–`#9` track this MVP loop. Post-MVP work (multi-reviewer panels, JaLC, reviewer dashboard, MCP server, AGPL/CLA polish) is deferred.
+
+## Full pipeline (design target)
 
 ```
    submit (manuscript + project repo + Clew DAG)
@@ -29,7 +58,10 @@ Traditional peer review is slow, opaque, volunteer-limited, and cannot keep pace
       |     - methodology critique
       |
       v
-   gate 3: internal persistent ID
+   gate 3: editorial decision (accept / revise / reject)
+      |
+      v
+   gate 4: persistent ID
       |       (JaLC after incorporation; Zenodo DOI interim;
       |        sandbox-DOI for dev)
       |
@@ -41,6 +73,7 @@ Traditional peer review is slow, opaque, volunteer-limited, and cannot keep pace
 
 ```
 scitex-agentic-journal   --reads-->   scitex-clew         (claim model + DAG)
+scitex-agentic-journal   --reads-->   scitex-scholar      (literature triangulation)
 scitex-agentic-journal   --emits-->   scitex-live-paper   (rendered artefact)
 scitex-agentic-journal   --hosts-on-> scitex-hub          (reviewer dashboard, auth)
 ```
@@ -55,16 +88,18 @@ scitex-agentic-journal   --hosts-on-> scitex-hub          (reviewer dashboard, a
 2. Implement gate 1 only: structural checks against the submitted bundle — no AI review yet.
    - ORCID resolvable
    - code repo cloneable
-   - clew DAG present and `clew claim verify` returns >= 1 green claim
+   - clew DAG present and `clew claim verify` returns ≥ 1 green claim
 3. CLI: `scitex-agentic-journal submit ./paper/` returns gate-1 verdict (pass / fail + reasons).
 4. No mocks. No silent fallbacks. Real errors with guidance.
 
-Subsequent milestones are tracked as separate issues:
+Subsequent milestones (tracked as issues):
 
-- M2 — AI review (Spartan Qwen reviewer agents)
-- M3 — persistent ID (sandbox -> Zenodo -> JaLC)
-- M4 — publish to `scitex-live-paper`
-- M5 — reviewer dashboard on `scitex-hub`
+- **M2** — AI review (Spartan Qwen reviewer agents): reproducibility re-run, claim verify, novelty triangulation, methodology critique.
+- **M3** — Editorial decision engine (accept / revise / reject) over the review record.
+- **M4** — Persistent ID (sandbox → Zenodo → JaLC).
+- **M5** — Publish hand-off to `scitex-live-paper`.
+- **M6** — Reviewer dashboard on `scitex-hub` (Django app).
+- **M7** — MCP server for agents.
 
 ## Install (planned)
 

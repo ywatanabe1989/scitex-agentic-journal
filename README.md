@@ -213,14 +213,14 @@ milestone:
 
 `scitex-agentic-journal` is part of [SciTeX](https://scitex.ai).
 
-> **The Four Freedoms for Research**
+>Four Freedoms for Research
 >
-> 1. **Freedom to read** every claim, every dataset, every line of code that produced a published result.
-> 2. **Freedom to run** every published analysis end-to-end on your own machine, without paywalls or proprietary toolchains.
-> 3. **Freedom to verify** every claim with a deterministic, hash-verified provenance graph.
-> 4. **Freedom to fork** any published artefact under an OSI-approved licence and republish derivative work.
+>0. The freedom to **run** your research anywhere — your machine, your terms.
+>1. The freedom to **study** how every step works — from raw data to final manuscript.
+>2. The freedom to **redistribute** your workflows, not just your papers.
+>3. The freedom to **modify** any module and share improvements with the community.
 >
-> SciTeX exists so that scientific publishing satisfies all four.
+>AGPL-3.0 — because we believe research infrastructure deserves the same freedoms as the software it runs on.
 
 Upstream dependencies:
 

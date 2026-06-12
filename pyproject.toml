@@ -116,4 +116,5 @@ testpaths = ["tests"]
 addopts = "-ra"
 markers = [
     "network: real-network tests (e.g. pub.orcid.org). Opt in with SCITEX_RUN_NETWORK_TESTS=1.",
+    "integration: end-to-end tests that exec shell examples / hit real peers (network + git). Skipped automatically when prerequisites are absent.",
 ]

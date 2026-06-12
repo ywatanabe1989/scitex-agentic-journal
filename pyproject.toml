@@ -1,0 +1,88 @@
+[build-system]
+requires = ["setuptools>=68", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scitex-agentic-journal"
+version = "0.1.0-alpha"
+description = "ARA-native AI-reviewed open publishing on top of Clew. Part of SciTeX."
+readme = "README.md"
+license = "AGPL-3.0-only"
+requires-python = ">=3.10"
+authors = [
+    { name = "Yusuke Watanabe", email = "noreply@scitex.ai" },
+]
+keywords = [
+    "scitex",
+    "open-publishing",
+    "ai-review",
+    "ara",
+    "preprint",
+    "clew",
+    "doi",
+    "orcid",
+    "live-paper",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+]
+dependencies = [
+    # Hub-side Django app (loose coupling to scitex-cloud via writer_django wrapper pattern).
+    "django>=4.2",
+    # SciTeX dev tooling (CLI scaffolds, validate-version helpers).
+    "scitex-dev>=0.11.7",
+    # UI shell + components (live-paper viewer when ready).
+    "scitex-ui>=0.1.0",
+    # CLI surface.
+    "click>=8.0",
+    # ORCID + DOI HTTP backends.
+    "requests>=2.31",
+    # YAML for prompt _meta and prompts versioning.
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-django>=4.0",
+]
+mcp = [
+    "fastmcp>=2.0",
+]
+
+[project.scripts]
+scitex-agentic-journal = "scitex_agentic_journal._cli:main"
+
+[project.urls]
+Homepage = "https://github.com/ywatanabe1989/scitex-agentic-journal"
+Repository = "https://github.com/ywatanabe1989/scitex-agentic-journal"
+Issues = "https://github.com/ywatanabe1989/scitex-agentic-journal/issues"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["scitex_agentic_journal*"]
+
+[tool.setuptools.package-data]
+"scitex_agentic_journal" = [
+    "_django/manifest.json",
+    "_django/templates/**/*",
+    "_django/static/**/*",
+    "_review/prompts/**/*",
+    "_skills/**/*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

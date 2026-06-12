@@ -95,3 +95,6 @@ include = ["scitex_agentic_journal*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+markers = [
+    "network: real-network tests (e.g. pub.orcid.org). Opt in with SCITEX_RUN_NETWORK_TESTS=1.",
+]

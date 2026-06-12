@@ -5,6 +5,24 @@ All notable changes to `scitex-agentic-journal` are documented in this file.
 ## [Unreleased]
 
 ### Added
+- `scitex_agentic_journal._gate1` package — first slice of the M1 submission
+  gate. Public surface: `GateFailure` (structured failure exception),
+  `verify_orcid(orcid_id, *, session=None, base_url=...)`, `OrcidRecord`,
+  and `ORCID_PUB_API_BASE` constant.
+- `verify_orcid` resolves an ORCID iD against the public ORCID v3.0 API
+  via real HTTP (`requests`). Accepts bare iDs and any `orcid.org` /
+  `sandbox.orcid.org` URL form. Verifies the ISO 7064 MOD 11-2 check
+  digit before any network call. Loud, structured `GateFailure` on
+  malformed iD / bad checksum / 404 / non-2xx / non-JSON body /
+  unfamiliar record shape / network unreachable. No silent fallbacks,
+  no mocks.
+- `tests/test_gate1_orcid.py` — hermetic test suite that spins up a real
+  local stdlib `http.server` on an ephemeral port and exercises
+  `verify_orcid` over real TCP via the `base_url` config seam (no
+  monkey-patching, no respx/responses replay library — STX-NM001-003 /
+  PA-306 compliant). One opt-in `@pytest.mark.network` test hits the
+  real `pub.orcid.org` when `SCITEX_RUN_NETWORK_TESTS=1`.
+- `pyproject.toml`: register the `network` pytest marker.
 - README "What it is" section spelling out the AI-agent-driven peer-review /
   copy-edit / publication-readiness role, and an explicit "MVP loop"
   (submit → agent review → decision → publish) section that maps to the

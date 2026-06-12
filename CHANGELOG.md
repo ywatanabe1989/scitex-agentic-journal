@@ -5,6 +5,25 @@ All notable changes to `scitex-agentic-journal` are documented in this file.
 ## [Unreleased]
 
 ### Added
+- `_gate1.clone_code_repo(repo_url, destination, *, depth=1, ref=None,
+  timeout_s=60.0)` — second slice of the M1 submission gate. Shells out
+  to the real system `git` binary to shallow-clone the author's code
+  repository. Loud structured `GateFailure` on empty URL, missing `git`
+  binary, pre-existing destination, clone failure (exit code + stderr
+  excerpt), or timeout. On any failure the partially-populated
+  destination is removed.
+- `_gate1.cloned_code_repo(repo_url, ...)` — context-manager helper that
+  clones into a tempdir and cleans up on exit, so the CLI orchestrator
+  (issue #5) does not have to manage tempdirs itself.
+- `_gate1.ClonedRepo` dataclass exposing `repo_url`, `path`,
+  `head_commit`, `head_subject` so downstream gates can identify what
+  was reviewed without re-cloning.
+- `tests/test_gate1_code_repo.py` — hermetic test suite that builds a
+  real local bare git repo with one real commit and clones via a
+  `file://` URL. Real `git` binary, real subprocess, real disk; no
+  `subprocess` patching, no respx/responses replay (STX-NM001-003 /
+  PA-306 compliant). One opt-in `@pytest.mark.network` test clones
+  `github.com/octocat/Hello-World` when `SCITEX_RUN_NETWORK_TESTS=1`.
 - `scitex_agentic_journal._gate1` package — first slice of the M1 submission
   gate. Public surface: `GateFailure` (structured failure exception),
   `verify_orcid(orcid_id, *, session=None, base_url=...)`, `OrcidRecord`,

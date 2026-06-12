@@ -4,6 +4,12 @@
 callers in the submission pipeline can `raise` it on any structural
 problem and the orchestrating CLI prints `reason` + `detail` to the
 operator without a Python traceback. No silent fallbacks.
+
+Implementation note: ``GateFailure`` is a ``@dataclass`` but is **not**
+``frozen``. CPython sets ``__traceback__`` on every exception during
+``raise`` / ``contextlib`` exit; a ``frozen=True`` dataclass-exception
+trips ``FrozenInstanceError`` inside ``__exit__``. We rely on discipline
+(no field reassignment in production) instead of enforced immutability.
 """
 
 from __future__ import annotations
@@ -11,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True)
+@dataclass(eq=True)
 class GateFailure(Exception):
     """A structural gate-1 check failed.
 

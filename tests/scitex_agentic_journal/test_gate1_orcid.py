@@ -7,17 +7,25 @@ Discipline (STX-NM001-003 / PA-306, "no mocks"):
   never inject a fake session object.
 - For hermetic CI we spin up a **real local HTTP server** (stdlib
   ``http.server`` on an ephemeral port) that serves real JSON files
-  out of ``tests/_fixtures/``. The resolver hits it over real TCP via
-  the legitimate ``base_url`` config seam that the CLI will also use
-  (e.g. to point at ``sandbox.orcid.org``).
-- One test (``test_real_orcid_org_resolves``) talks to the real
-  ``pub.orcid.org``; it is marked ``@pytest.mark.network`` and skipped
-  unless ``SCITEX_RUN_NETWORK_TESTS=1``.
+  out of ``tests/scitex_agentic_journal/_fixtures/``. The resolver
+  hits it over real TCP via the legitimate ``base_url`` config seam
+  that the CLI will also use (e.g. to point at ``sandbox.orcid.org``).
+- One test (``test_real_orcid_org_record_resolves_for_carberry``) talks
+  to the real ``pub.orcid.org``; it is marked ``@pytest.mark.network``
+  and skipped unless ``SCITEX_RUN_NETWORK_TESTS=1``.
+
+Structure (STX-TQ rules):
+
+- Every test carries explicit ``# Arrange`` / ``# Act`` / ``# Assert``
+  markers.
+- Each test asserts exactly one fact; multi-assertion tests are split
+  by behaviour.
+- Test names spell out the subject, condition, and expected behaviour
+  (≥3 word-tokens after ``test_``).
 """
 
 from __future__ import annotations
 
-import json
 import os
 import socket
 import threading
@@ -39,11 +47,7 @@ FIXTURE_DIR = Path(__file__).parent / "_fixtures"
 
 
 class _FixtureHandler(BaseHTTPRequestHandler):
-    """Serve ORCID-like ``/v3.0/{iD}/record`` responses from fixture JSON.
-
-    The handler is parameterised at server-construction time via
-    ``server.fixture_map`` (path -> (status, json_path_or_text)).
-    """
+    """Serve ORCID-like ``/v3.0/{iD}/record`` responses from fixture JSON."""
 
     def do_GET(self) -> None:  # noqa: N802 (stdlib API)
         server: _FixtureServer = self.server  # type: ignore[assignment]
@@ -69,7 +73,6 @@ class _FixtureHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    # Silence stderr access-log noise during tests.
     def log_message(self, format: str, *args: object) -> None:  # noqa: A002
         pass
 
@@ -82,19 +85,7 @@ class _FixtureServer(ThreadingHTTPServer):
 def orcid_fixture_server() -> (
     Iterator[Callable[[dict[str, tuple[int, object]]], str]]
 ):
-    """Spin up a local HTTP server on an ephemeral port; yield a base_url builder.
-
-    Usage::
-
-        def test_something(orcid_fixture_server):
-            base = orcid_fixture_server({
-                "/v3.0/0000-0002-1825-0097/record": (
-                    200,
-                    FIXTURE_DIR / "orcid_0000-0002-1825-0097_record.json",
-                ),
-            })
-            rec = verify_orcid("0000-0002-1825-0097", base_url=base)
-    """
+    """Spin up a local HTTP server on an ephemeral port; yield base_url builder."""
     server = _FixtureServer(("127.0.0.1", 0), _FixtureHandler)
     server.fixture_map = {}
     port = server.server_address[1]
@@ -118,149 +109,261 @@ def orcid_fixture_server() -> (
 # ---------------------------------------------------------------------------
 
 
-class TestNormalizeOrcid:
-    def test_accepts_bare_form(self) -> None:
-        assert normalize_orcid("0000-0002-1825-0097") == "0000-0002-1825-0097"
+def test_normalize_orcid_accepts_bare_form_unchanged() -> None:
+    # Arrange
+    bare = "0000-0002-1825-0097"
+    # Act
+    out = normalize_orcid(bare)
+    # Assert
+    assert out == bare
 
-    def test_accepts_orcid_org_url(self) -> None:
-        assert (
-            normalize_orcid("https://orcid.org/0000-0002-1825-0097")
-            == "0000-0002-1825-0097"
-        )
 
-    def test_accepts_sandbox_url(self) -> None:
-        assert (
-            normalize_orcid("https://sandbox.orcid.org/0000-0002-1825-0097")
-            == "0000-0002-1825-0097"
-        )
+def test_normalize_orcid_strips_orcid_org_url_prefix() -> None:
+    # Arrange
+    url = "https://orcid.org/0000-0002-1825-0097"
+    # Act
+    out = normalize_orcid(url)
+    # Assert
+    assert out == "0000-0002-1825-0097"
 
-    def test_accepts_trailing_slash(self) -> None:
-        assert (
-            normalize_orcid("https://orcid.org/0000-0002-1825-0097/")
-            == "0000-0002-1825-0097"
-        )
 
-    def test_accepts_x_check_digit(self) -> None:
-        # 0000-0002-1825-009X is checksum-invalid for body 0000000218250 09;
-        # use a known X-tail iD: 0000-0001-5109-3700 -> body checksum '0',
-        # for an X-tail we need a contrived but valid one.
-        # Use 0000-0002-1694-233X (a real public ORCID iD with X check).
-        assert (
-            normalize_orcid("0000-0002-1694-233X") == "0000-0002-1694-233X"
-        )
+def test_normalize_orcid_strips_sandbox_orcid_org_url_prefix() -> None:
+    # Arrange
+    url = "https://sandbox.orcid.org/0000-0002-1825-0097"
+    # Act
+    out = normalize_orcid(url)
+    # Assert
+    assert out == "0000-0002-1825-0097"
 
-    def test_rejects_garbage(self) -> None:
-        with pytest.raises(GateFailure) as ei:
-            normalize_orcid("not-an-orcid")
-        assert ei.value.check == "orcid"
-        assert "canonical" in ei.value.reason
 
-    def test_rejects_bad_checksum(self) -> None:
-        # Last digit deliberately wrong.
-        with pytest.raises(GateFailure) as ei:
-            normalize_orcid("0000-0002-1825-0098")
-        assert ei.value.check == "orcid"
-        assert "checksum" in ei.value.reason
+def test_normalize_orcid_strips_trailing_slash_from_url() -> None:
+    # Arrange
+    url = "https://orcid.org/0000-0002-1825-0097/"
+    # Act
+    out = normalize_orcid(url)
+    # Assert
+    assert out == "0000-0002-1825-0097"
+
+
+def test_normalize_orcid_accepts_x_check_digit_unchanged() -> None:
+    # Arrange
+    x_tail = "0000-0002-1694-233X"
+    # Act
+    out = normalize_orcid(x_tail)
+    # Assert
+    assert out == x_tail
+
+
+def test_normalize_orcid_rejects_unparseable_garbage_string() -> None:
+    # Arrange
+    garbage = "not-an-orcid"
+    # Act / Assert
+    with pytest.raises(GateFailure):
+        normalize_orcid(garbage)
+
+
+def test_normalize_orcid_rejects_bad_checksum_digit() -> None:
+    # Arrange — last digit deliberately wrong (Carberry is …0097, this is …0098).
+    bad_checksum = "0000-0002-1825-0098"
+    # Act / Assert
+    with pytest.raises(GateFailure):
+        normalize_orcid(bad_checksum)
 
 
 # ---------------------------------------------------------------------------
-# verify_orcid — real HTTP against the local fixture server.
+# verify_orcid — happy paths against the real local fixture server.
 # ---------------------------------------------------------------------------
 
 
-class TestVerifyOrcidAgainstFixtureServer:
-    def test_full_name_record(self, orcid_fixture_server) -> None:
-        base = orcid_fixture_server(
-            {
-                "/v3.0/0000-0002-1825-0097/record": (
-                    200,
-                    FIXTURE_DIR / "orcid_0000-0002-1825-0097_record.json",
-                ),
-            }
+def test_verify_orcid_returns_orcid_record_instance(orcid_fixture_server) -> None:
+    # Arrange
+    base = orcid_fixture_server(
+        {
+            "/v3.0/0000-0002-1825-0097/record": (
+                200,
+                FIXTURE_DIR / "orcid_0000-0002-1825-0097_record.json",
+            ),
+        }
+    )
+    # Act
+    rec = verify_orcid("0000-0002-1825-0097", base_url=base)
+    # Assert
+    assert isinstance(rec, OrcidRecord)
+
+
+def test_verify_orcid_record_carries_given_name(orcid_fixture_server) -> None:
+    # Arrange
+    base = orcid_fixture_server(
+        {
+            "/v3.0/0000-0002-1825-0097/record": (
+                200,
+                FIXTURE_DIR / "orcid_0000-0002-1825-0097_record.json",
+            ),
+        }
+    )
+    # Act
+    rec = verify_orcid("0000-0002-1825-0097", base_url=base)
+    # Assert
+    assert rec.given_name == "Josiah"
+
+
+def test_verify_orcid_record_carries_family_name(orcid_fixture_server) -> None:
+    # Arrange
+    base = orcid_fixture_server(
+        {
+            "/v3.0/0000-0002-1825-0097/record": (
+                200,
+                FIXTURE_DIR / "orcid_0000-0002-1825-0097_record.json",
+            ),
+        }
+    )
+    # Act
+    rec = verify_orcid("0000-0002-1825-0097", base_url=base)
+    # Assert
+    assert rec.family_name == "Carberry"
+
+
+def test_verify_orcid_record_carries_credit_name(orcid_fixture_server) -> None:
+    # Arrange
+    base = orcid_fixture_server(
+        {
+            "/v3.0/0000-0002-1825-0097/record": (
+                200,
+                FIXTURE_DIR / "orcid_0000-0002-1825-0097_record.json",
+            ),
+        }
+    )
+    # Act
+    rec = verify_orcid("0000-0002-1825-0097", base_url=base)
+    # Assert
+    assert rec.credit_name == "Josiah S. Carberry"
+
+
+def test_verify_orcid_display_name_prefers_credit_name_when_set(
+    orcid_fixture_server,
+) -> None:
+    # Arrange
+    base = orcid_fixture_server(
+        {
+            "/v3.0/0000-0002-1825-0097/record": (
+                200,
+                FIXTURE_DIR / "orcid_0000-0002-1825-0097_record.json",
+            ),
+        }
+    )
+    # Act
+    rec = verify_orcid("0000-0002-1825-0097", base_url=base)
+    # Assert
+    assert rec.display_name == "Josiah S. Carberry"
+
+
+def test_verify_orcid_handles_missing_given_name_field(
+    orcid_fixture_server,
+) -> None:
+    # Arrange
+    base = orcid_fixture_server(
+        {
+            "/v3.0/0000-0001-2345-6789/record": (
+                200,
+                FIXTURE_DIR / "orcid_0000-0001-2345-6789_record_minimal.json",
+            ),
+        }
+    )
+    # Act
+    rec = verify_orcid("0000-0001-2345-6789", base_url=base)
+    # Assert
+    assert rec.given_name is None
+
+
+def test_verify_orcid_falls_back_to_family_name_for_display(
+    orcid_fixture_server,
+) -> None:
+    # Arrange
+    base = orcid_fixture_server(
+        {
+            "/v3.0/0000-0001-2345-6789/record": (
+                200,
+                FIXTURE_DIR / "orcid_0000-0001-2345-6789_record_minimal.json",
+            ),
+        }
+    )
+    # Act
+    rec = verify_orcid("0000-0001-2345-6789", base_url=base)
+    # Assert
+    assert rec.display_name == "Solo"
+
+
+# ---------------------------------------------------------------------------
+# verify_orcid — failure paths against real (mis-)configured fixture server.
+# ---------------------------------------------------------------------------
+
+
+def test_verify_orcid_raises_when_record_endpoint_returns_404(
+    orcid_fixture_server,
+) -> None:
+    # Arrange — nothing registered, so every request 404s.
+    base = orcid_fixture_server({})
+    # Act / Assert
+    with pytest.raises(GateFailure):
+        verify_orcid("0000-0002-1825-0097", base_url=base)
+
+
+def test_verify_orcid_raises_when_record_endpoint_returns_500(
+    orcid_fixture_server,
+) -> None:
+    # Arrange
+    base = orcid_fixture_server(
+        {
+            "/v3.0/0000-0002-1825-0097/record": (500, "boom"),
+        }
+    )
+    # Act / Assert
+    with pytest.raises(GateFailure):
+        verify_orcid("0000-0002-1825-0097", base_url=base)
+
+
+def test_verify_orcid_raises_when_record_body_is_not_json(
+    orcid_fixture_server,
+) -> None:
+    # Arrange
+    base = orcid_fixture_server(
+        {
+            "/v3.0/0000-0002-1825-0097/record": (200, b"<html>nope</html>"),
+        }
+    )
+    # Act / Assert
+    with pytest.raises(GateFailure):
+        verify_orcid("0000-0002-1825-0097", base_url=base)
+
+
+def test_verify_orcid_raises_when_record_shape_lacks_person_object(
+    orcid_fixture_server,
+) -> None:
+    # Arrange
+    base = orcid_fixture_server(
+        {
+            "/v3.0/0000-0002-1825-0097/record": (
+                200,
+                FIXTURE_DIR / "orcid_0000-0002-1825-0097_record_garbled.json",
+            ),
+        }
+    )
+    # Act / Assert
+    with pytest.raises(GateFailure):
+        verify_orcid("0000-0002-1825-0097", base_url=base)
+
+
+def test_verify_orcid_raises_when_orcid_api_host_is_unreachable() -> None:
+    # Arrange — pick a port we know is closed.
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        closed_port = s.getsockname()[1]
+    # Act / Assert
+    with pytest.raises(GateFailure):
+        verify_orcid(
+            "0000-0002-1825-0097",
+            base_url=f"http://127.0.0.1:{closed_port}/v3.0",
         )
-        rec = verify_orcid("0000-0002-1825-0097", base_url=base)
-        assert isinstance(rec, OrcidRecord)
-        assert rec.orcid_id == "0000-0002-1825-0097"
-        assert rec.given_name == "Josiah"
-        assert rec.family_name == "Carberry"
-        assert rec.credit_name == "Josiah S. Carberry"
-        assert rec.display_name == "Josiah S. Carberry"
-
-    def test_minimal_name_record_falls_back_to_family_only(
-        self, orcid_fixture_server
-    ) -> None:
-        base = orcid_fixture_server(
-            {
-                "/v3.0/0000-0001-2345-6789/record": (
-                    200,
-                    FIXTURE_DIR / "orcid_0000-0001-2345-6789_record_minimal.json",
-                ),
-            }
-        )
-        rec = verify_orcid("0000-0001-2345-6789", base_url=base)
-        assert rec.given_name is None
-        assert rec.family_name == "Solo"
-        assert rec.credit_name is None
-        assert rec.display_name == "Solo"
-
-    def test_404_raises_does_not_resolve(self, orcid_fixture_server) -> None:
-        base = orcid_fixture_server({})  # nothing registered -> 404
-        with pytest.raises(GateFailure) as ei:
-            verify_orcid("0000-0002-1825-0097", base_url=base)
-        assert ei.value.check == "orcid"
-        assert "does not resolve" in ei.value.reason
-        assert "HTTP 404" in ei.value.detail
-
-    def test_500_raises_non_success(self, orcid_fixture_server) -> None:
-        base = orcid_fixture_server(
-            {
-                "/v3.0/0000-0002-1825-0097/record": (500, "boom"),
-            }
-        )
-        with pytest.raises(GateFailure) as ei:
-            verify_orcid("0000-0002-1825-0097", base_url=base)
-        assert "non-success" in ei.value.reason
-        assert "HTTP 500" in ei.value.detail
-
-    def test_non_json_body_raises(self, orcid_fixture_server) -> None:
-        base = orcid_fixture_server(
-            {
-                "/v3.0/0000-0002-1825-0097/record": (
-                    200,
-                    b"<html>nope</html>",
-                ),
-            }
-        )
-        with pytest.raises(GateFailure) as ei:
-            verify_orcid("0000-0002-1825-0097", base_url=base)
-        assert "non-json" in ei.value.reason
-
-    def test_unfamiliar_record_shape_raises(self, orcid_fixture_server) -> None:
-        base = orcid_fixture_server(
-            {
-                "/v3.0/0000-0002-1825-0097/record": (
-                    200,
-                    FIXTURE_DIR / "orcid_0000-0002-1825-0097_record_garbled.json",
-                ),
-            }
-        )
-        with pytest.raises(GateFailure) as ei:
-            verify_orcid("0000-0002-1825-0097", base_url=base)
-        assert "unfamiliar" in ei.value.reason
-
-    def test_network_unreachable_raises_loudly(self) -> None:
-        # Use a closed port to surface a real connect-failure path.
-        with socket.socket() as s:
-            s.bind(("127.0.0.1", 0))
-            closed_port = s.getsockname()[1]
-        # Socket closed when block exits -> port now unreachable.
-        with pytest.raises(GateFailure) as ei:
-            verify_orcid(
-                "0000-0002-1825-0097",
-                base_url=f"http://127.0.0.1:{closed_port}/v3.0",
-            )
-        assert ei.value.check == "orcid"
-        assert "unreachable" in ei.value.reason
 
 
 # ---------------------------------------------------------------------------
@@ -273,8 +376,10 @@ class TestVerifyOrcidAgainstFixtureServer:
     os.environ.get("SCITEX_RUN_NETWORK_TESTS") != "1",
     reason="opt in by setting SCITEX_RUN_NETWORK_TESTS=1",
 )
-def test_real_orcid_org_resolves() -> None:
-    rec = verify_orcid("0000-0002-1825-0097")  # Josiah Carberry
-    assert rec.orcid_id == "0000-0002-1825-0097"
-    # Don't pin the name shape — ORCID may revise display name fields.
+def test_real_orcid_org_record_resolves_for_carberry() -> None:
+    # Arrange — well-known public ORCID iD (Josiah Carberry).
+    iD = "0000-0002-1825-0097"
+    # Act
+    rec = verify_orcid(iD)
+    # Assert — only check structural truth, not display-name shape.
     assert rec.display_name

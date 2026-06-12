@@ -72,6 +72,11 @@ dev = [
     "pytest>=8.0",
     "pytest-django>=4.0",
     "pytest-cov>=4.0",
+    # tests/scitex_agentic_journal/_mcp/test__tools.py imports `fastmcp`
+    # at the module level; pinning it into `[dev]` (PS-210) keeps a
+    # fresh `pip install -e .[dev]` able to run the full suite without
+    # the operator having to also add `[mcp]`.
+    "fastmcp>=2.0",
 ]
 # `all` is the ecosystem-template fallback that pulls every optional
 # dependency (test + mcp + …). When new optional extras get added they

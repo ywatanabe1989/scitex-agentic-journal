@@ -4,7 +4,7 @@ description: |
   [WHAT] `scitex-agentic-journal` is the publication-venue substrate of SciTeX: a journal where AI agents (Spartan/Qwen-class reviewer agents) — not volunteer reviewers — perform peer review, reproducibility re-run, claim verification, novelty triangulation, methodology critique, and editorial decision (accept / revise / reject). The package ingests a manuscript bundle (LaTeX + claims + Clew DAG + code repo + ORCID), runs gate-1 structural checks, gate-2 AI review, gate-3 editorial decision, gate-4 persistent ID, then hands off to scitex-live-paper.
   [WHEN] Use when the user asks to submit, review, accept, reject, revise, mint a DOI for, or publish a manuscript via the SciTeX agentic journal; or mentions ARA-native publishing, gate-1 / gate-2 checks, ORCID validation, Clew DAG submission gate, Live Paper hand-off, reviewer agents, or editorial decision engine.
   [HOW] `pip install scitex-agentic-journal` (CLI + library) or `pip install scitex-agentic-journal[mcp]` (+ MCP server for agents). See the leaf skills for submission bundle shape, gate-1 implementation, review engine, decision rules, and publish hand-off.
-tags: [scitex-agentic-journal, ara, peer-review, doi, orcid, clew, live-paper]
+tags: [scitex-agentic-journal]
 primary_interface: cli
 interfaces:
   python: 2
@@ -35,14 +35,30 @@ sub-package only exposes the standalone import path during alpha.
 
 ## Sub-skills (leaves)
 
-- [01_overview.md](01_overview.md) — what the package is, MVP loop, full pipeline, dependency direction
-- [02_submission-bundle.md](02_submission-bundle.md) — manuscript bundle shape (LaTeX + claims + Clew DAG + code repo + ORCID)
-- [03_gate1-checks.md](03_gate1-checks.md) — structural checks (ORCID resolvable, code repo cloneable, Clew DAG present + ≥1 green claim)
-- [04_review-and-decision.md](04_review-and-decision.md) — gate-2 AI review (reproducibility, claim verify, novelty, methodology) + gate-3 editorial decision (accept / revise / reject)
-- [05_publish-handoff.md](05_publish-handoff.md) — gate-4 persistent ID (sandbox → Zenodo → JaLC) + hand-off to scitex-live-paper
-- [06_python-api.md](06_python-api.md) — top-level Python surface (`Submission`, `Gate1`, `Review`, `Decision`, `Publish`)
-- [07_django-and-hub.md](07_django-and-hub.md) — `_django` reviewer dashboard mounted into scitex-hub via `apps/workspace/agentic_journal_app`
-- [08_mcp-and-agents.md](08_mcp-and-agents.md) — `_mcp` server: submit / review / decide / publish tools for AI agents
+### Core (01–09) — standard scaffold (SK-105/106/107/108)
+
+- [01_installation.md](01_installation.md) — install + extras + smoke verify
+- [02_quick-start.md](02_quick-start.md) — five-minute tour: ORCID + code repo + Clew DAG end-to-end
+- [03_python-api.md](03_python-api.md) — public Python surface (`_gate1`, `_orcid`, `_ports`, `_publish`, `_review`, `_django`, `_mcp`)
+- [04_cli-reference.md](04_cli-reference.md) — every console-script subcommand
+
+### Domain leaves (10–19)
+
+- [10_overview.md](10_overview.md) — what the package is, MVP loop, full pipeline, dependency direction
+- [11_submission-bundle.md](11_submission-bundle.md) — manuscript bundle shape (LaTeX + claims + Clew DAG + code repo + ORCID)
+- [12_gate1-checks.md](12_gate1-checks.md) — structural checks (ORCID resolvable, code repo cloneable, Clew DAG present + ≥1 green claim)
+- [13_review-and-decision.md](13_review-and-decision.md) — gate-2 AI review (reproducibility, claim verify, novelty, methodology) + gate-3 editorial decision (accept / revise / reject)
+- [14_publish-handoff.md](14_publish-handoff.md) — gate-4 persistent ID (sandbox → Zenodo → JaLC) + hand-off to scitex-live-paper
+- [15_python-api-detailed.md](15_python-api-detailed.md) — deeper Python-surface walk-through beyond 03_python-api.md
+
+### Configuration & state (20–29)
+
+- [20_env-vars.md](20_env-vars.md) — inventory of `SCITEX_AGENTIC_JOURNAL_*` env vars + the pytest opt-in flags
+
+### Architecture (30–39)
+
+- [30_django-and-hub.md](30_django-and-hub.md) — `_django` reviewer dashboard mounted into scitex-hub via `apps/workspace/agentic_journal_app`
+- [31_mcp-and-agents.md](31_mcp-and-agents.md) — `_mcp` server: submit / review / decide / publish tools for AI agents
 
 ## When NOT to use this skill
 

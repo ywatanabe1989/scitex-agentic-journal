@@ -1,3 +1,10 @@
+---
+description: |
+  [TOPIC] Overview
+  [DETAILS] What scitex-agentic-journal is, MVP loop, full pipeline, dependency direction.
+tags: [scitex-agentic-journal-overview]
+---
+
 # 01 · Overview
 
 `scitex-agentic-journal` is the **journal substrate** of SciTeX: a publication venue where AI agents — not volunteer reviewers — perform peer review, reproducibility re-run, claim verification, novelty triangulation, methodology critique, and editorial decision.

@@ -1,3 +1,10 @@
+---
+description: |
+  [TOPIC] Submission bundle
+  [DETAILS] Shape of the manuscript bundle Gate-1 ingests: LaTeX + claims + Clew DAG + code repo + ORCID.
+tags: [scitex-agentic-journal-submission-bundle]
+---
+
 # 02 · Submission bundle
 
 A **submission** to `scitex-agentic-journal` is a manuscript bundle. It is **read** by the package, never authored by it. The bundle shape is owned upstream (`scitex-writer`); agentic-journal only validates it.

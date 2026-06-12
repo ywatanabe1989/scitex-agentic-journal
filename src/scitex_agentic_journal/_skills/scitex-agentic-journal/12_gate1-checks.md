@@ -1,3 +1,10 @@
+---
+description: |
+  [TOPIC] Gate-1 structural checks
+  [DETAILS] ORCID resolvable, code repo cloneable, Clew DAG present + verifies >=1 green claim — the no-AI gate before reviewer agents run.
+tags: [scitex-agentic-journal-gate1-checks]
+---
+
 # 03 · Gate-1 structural checks
 
 Gate-1 is the **only gate implemented in M1**. No AI review yet — just structural validation that the submission is even worth reviewing.

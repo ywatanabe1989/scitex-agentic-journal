@@ -1,3 +1,10 @@
+---
+description: |
+  [TOPIC] Gate-2 AI review + Gate-3 editorial decision
+  [DETAILS] Reviewer agent surface (reproducibility re-run, claim verify, novelty triangulation, methodology critique) and the rule-based accept/revise/reject engine.
+tags: [scitex-agentic-journal-review-and-decision]
+---
+
 # 04 · AI review (gate-2) + editorial decision (gate-3)
 
 Gate-2 and gate-3 are the **AI-driven** part of the journal — the reason the package exists. Both are M2/M3 milestones, not yet implemented.

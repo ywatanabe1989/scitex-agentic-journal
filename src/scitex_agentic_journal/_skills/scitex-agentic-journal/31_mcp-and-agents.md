@@ -1,3 +1,10 @@
+---
+description: |
+  [TOPIC] MCP server + agent tools
+  [DETAILS] The submit / review / decide / publish MCP tools exposed under `_mcp`, scopes, audit log shape.
+tags: [scitex-agentic-journal-mcp-and-agents]
+---
+
 # 08 · MCP server + AI-agent surface
 
 `scitex-agentic-journal` ships an **MCP server** (`scitex_agentic_journal._mcp`) so AI agents — including the reviewer agents themselves — can drive the journal end-to-end without going through the human CLI.

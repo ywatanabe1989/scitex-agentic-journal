@@ -1,3 +1,10 @@
+---
+description: |
+  [TOPIC] Gate-4 persistent ID + publish hand-off
+  [DETAILS] Sandbox -> Zenodo -> JaLC ID minting and the bundle hand-off into scitex-live-paper.
+tags: [scitex-agentic-journal-publish-handoff]
+---
+
 # 05 · Gate-4 persistent ID + publish hand-off
 
 After gate-3 returns `accept`, the manuscript needs a **persistent identifier** and a **rendered Live Paper**. Gate-4 + publish hand-off cover both.

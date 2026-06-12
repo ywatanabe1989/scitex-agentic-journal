@@ -395,6 +395,19 @@ def mcp_list_tools(ctx: click.Context, as_json_local: bool) -> None:
 
 
 # ---------------------------------------------------------------------------
+# `skills` command group (§1a). The package ships a bundled
+# `_skills/scitex-agentic-journal/` tree, so the audit's §1a rule
+# requires a `<pkg> skills {list, get, install}` Click sub-group.
+# The implementation lives in `_cli_skills` to keep this module under
+# the harness's per-file line ceiling.
+# ---------------------------------------------------------------------------
+
+from scitex_agentic_journal._cli_skills import register_skills_commands
+
+register_skills_commands(main)
+
+
+# ---------------------------------------------------------------------------
 # Shell completion (install-shell-completion + print-shell-completion).
 #
 # The audit (§1a) requires both commands at the top level so

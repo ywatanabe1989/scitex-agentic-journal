@@ -1,3 +1,10 @@
+---
+description: |
+  [TOPIC] Python API — extended walk-through
+  [DETAILS] Deeper coverage of the Submission / Gate1 / Review / Decision / Publish types beyond the standard 03_python-api.md leaf.
+tags: [scitex-agentic-journal-python-api-detailed]
+---
+
 # 06 · Python API
 
 Top-level Python surface for `scitex-agentic-journal`. Most users hit the CLI / MCP; the Python API exists for programmatic submission pipelines (CI gates, batch re-reviews, end-to-end tests).

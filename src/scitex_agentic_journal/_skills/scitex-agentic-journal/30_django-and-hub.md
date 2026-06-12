@@ -1,3 +1,10 @@
+---
+description: |
+  [TOPIC] Django reviewer dashboard + scitex-hub integration
+  [DETAILS] How `_django` is mounted into scitex-hub via apps/workspace/agentic_journal_app, manifest contract, and URL include.
+tags: [scitex-agentic-journal-django-and-hub]
+---
+
 # 07 · Django app + scitex-hub integration
 
 `scitex-agentic-journal` ships an **embedded Django app** (`scitex_agentic_journal._django`) that is mounted into the SciTeX Hub deployment via a thin wrapper at `apps/workspace/agentic_journal_app/` in `scitex-cloud` (the hub repo).

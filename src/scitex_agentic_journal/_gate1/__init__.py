@@ -15,6 +15,12 @@ The orchestrating CLI (``scitex-agentic-journal submit``) wires these
 checks together; that wiring is tracked separately under issue #5 (M1 CLI).
 """
 
+from scitex_agentic_journal._gate1._clew_dag import (
+    CLEW_MARKER_DIR,
+    DEFAULT_VERIFY_TIMEOUT_S,
+    ClewVerification,
+    verify_clew_dag,
+)
 from scitex_agentic_journal._gate1._code_repo import (
     DEFAULT_CLONE_DEPTH,
     DEFAULT_CLONE_TIMEOUT_S,
@@ -30,13 +36,17 @@ from scitex_agentic_journal._gate1._orcid import (
 )
 
 __all__ = [
+    "CLEW_MARKER_DIR",
+    "ClewVerification",
     "ClonedRepo",
     "DEFAULT_CLONE_DEPTH",
     "DEFAULT_CLONE_TIMEOUT_S",
+    "DEFAULT_VERIFY_TIMEOUT_S",
     "GateFailure",
     "ORCID_PUB_API_BASE",
     "OrcidRecord",
     "clone_code_repo",
     "cloned_code_repo",
+    "verify_clew_dag",
     "verify_orcid",
 ]

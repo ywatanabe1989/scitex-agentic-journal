@@ -211,44 +211,12 @@ def decide(submission_id: str) -> None:
     )
 
 
-@main.command(name="publish")
-@click.argument("submission_id")
-@click.option(
-    "--dry-run/--no-dry-run",
-    default=False,
-    show_default=True,
-    help=(
-        "Compute the publish bundle but do not stamp a persistent ID "
-        "and do not hand off to scitex-live-paper. Mutating verbs MUST "
-        "support --dry-run."
-    ),
-)
-@click.option(
-    "--yes",
-    "-y",
-    "assume_yes",
-    is_flag=True,
-    default=False,
-    help=(
-        "Assume yes to confirmation prompts. Mutating verbs MUST "
-        "support --yes / -y for non-interactive callers."
-    ),
-)
-def publish(
-    submission_id: str, dry_run: bool, assume_yes: bool
-) -> None:
-    """Hand off an accepted submission to scitex-live-paper.
+# `publish` subcommand (M5 — #9). Implementation lives in
+# `_cli._publish` (sibling submodule) so this module stays under
+# the harness's 512-line per-file ceiling.
+from scitex_agentic_journal._cli._publish import register_publish_command
 
-    Example:
-
-      $ scitex-agentic-journal publish sub_2026_06_12_abc123 --dry-run
-      $ scitex-agentic-journal publish sub_2026_06_12_abc123 --yes
-    """
-    raise click.ClickException(
-        "M5 publish hand-off is not implemented yet — see issue #9 "
-        f"(submission_id={submission_id!r}, "
-        f"dry_run={dry_run!r}, yes={assume_yes!r})."
-    )
+register_publish_command(main)
 
 
 @main.command(name="list-python-apis")

@@ -21,9 +21,22 @@ This package ships:
 from __future__ import annotations
 
 from scitex_agentic_journal._publish._crossref import CrossrefStub
+from scitex_agentic_journal._publish._handoff import (
+    BUNDLE_FILENAME,
+    LocalFilesystemLivePaperPort,
+    PUBLISHED_DIRNAME,
+    RemoteLivePaperPortStub,
+    build_bundle,
+    publish_submission,
+)
 from scitex_agentic_journal._publish._internal import InternalIdMinter
 from scitex_agentic_journal._publish._jalc import JalcStub
 from scitex_agentic_journal._publish._live_paper_proxy import LivePaperProxy
+from scitex_agentic_journal._publish._load_records import (
+    PublishLoadError,
+    PublishRecords,
+    load_submission_records,
+)
 from scitex_agentic_journal._publish._select import (
     UnknownBackendError,
     select_minter,
@@ -39,15 +52,24 @@ from scitex_agentic_journal._publish._zenodo import (
 )
 
 __all__ = [
+    "BUNDLE_FILENAME",
     "CrossrefStub",
     "IdMinter",
     "InternalIdMinter",
     "JalcStub",
     "LivePaperProxy",
+    "LocalFilesystemLivePaperPort",
     "MintInput",
+    "PUBLISHED_DIRNAME",
     "PersistentId",
+    "PublishLoadError",
+    "PublishRecords",
+    "RemoteLivePaperPortStub",
     "UnknownBackendError",
     "ZenodoSandboxStub",
     "ZenodoStub",
+    "build_bundle",
+    "load_submission_records",
+    "publish_submission",
     "select_minter",
 ]

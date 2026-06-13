@@ -224,19 +224,12 @@ def submit(bundle_dir: str) -> None:
     click.echo(f"GATE-1 PASS submission_id={persisted.submission_id}")
 
 
-@main.command(name="review")
-@click.argument("submission_id")
-def review(submission_id: str) -> None:
-    """Run a single reviewer-agent against a persisted submission.
+# `review` subcommand (M2 — #6). Implementation lives in
+# `_cli_review.py` so this module stays under the harness's
+# 512-line per-file ceiling.
+from scitex_agentic_journal._cli_review import register_review_command
 
-    Example:
-
-      $ scitex-agentic-journal review sub_2026_06_12_abc123
-    """
-    raise click.ClickException(
-        "M2 reviewer-agent harness is not implemented yet — see issue #6 "
-        f"(submission_id={submission_id!r})."
-    )
+register_review_command(main)
 
 
 @main.command(name="decide")

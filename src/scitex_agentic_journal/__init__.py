@@ -33,12 +33,14 @@ from scitex_agentic_journal._re_review_badge import (
 
 # B-path hub-app-publisher helpers — surfaced at the package top so the
 # user-published ``scitex_agentic_journal_hub_app`` wrapper writes
-# ``from scitex_agentic_journal import build_hub_resolver, HUB_APP_MANIFEST``.
+# ``from scitex_agentic_journal import build_hub_resolver, HUB_APP_MANIFEST,
+# derive_wrapper_manifest`` instead of digging into the underscored submodule.
 from scitex_agentic_journal._hub_app_publisher import (
     HUB_APP_MANIFEST,
     HUB_APP_NAME,
     HUB_APP_VERSION,
     build_hub_resolver,
+    derive_wrapper_manifest,
 )
 
 __all__ = [
@@ -49,6 +51,7 @@ __all__ = [
     "ReReviewStatus",
     "__version__",
     "build_hub_resolver",
+    "derive_wrapper_manifest",
     "resolve_badge_for_paper",
     "verdict_to_status",
 ]

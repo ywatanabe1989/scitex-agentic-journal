@@ -24,6 +24,14 @@ from scitex_agentic_journal._publish._crossref import CrossrefStub
 from scitex_agentic_journal._publish._internal import InternalIdMinter
 from scitex_agentic_journal._publish._jalc import JalcStub
 from scitex_agentic_journal._publish._live_paper_proxy import LivePaperProxy
+from scitex_agentic_journal._publish._mint import (
+    MintLoadError,
+    mint_for_submission,
+)
+from scitex_agentic_journal._publish._persist import (
+    PersistedPersistentId,
+    persist_persistent_id,
+)
 from scitex_agentic_journal._publish._select import (
     UnknownBackendError,
     select_minter,
@@ -45,9 +53,13 @@ __all__ = [
     "JalcStub",
     "LivePaperProxy",
     "MintInput",
+    "MintLoadError",
+    "PersistedPersistentId",
     "PersistentId",
     "UnknownBackendError",
     "ZenodoSandboxStub",
     "ZenodoStub",
+    "mint_for_submission",
+    "persist_persistent_id",
     "select_minter",
 ]

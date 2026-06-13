@@ -38,6 +38,10 @@ manifest spec proj-scitex-hub published.
 
 from __future__ import annotations
 
+from scitex_agentic_journal._hub_app_publisher._derive_wrapper_manifest import (
+    DEFAULT_HUB_SCHEMA_VERSION,
+    derive_wrapper_manifest,
+)
 from scitex_agentic_journal._hub_app_publisher._manifest import (
     HUB_APP_MANIFEST,
     HUB_APP_NAME,
@@ -52,10 +56,12 @@ from scitex_agentic_journal._hub_app_publisher._resolver_adapter import (
 
 __all__ = [
     "BundleContextFactory",
+    "DEFAULT_HUB_SCHEMA_VERSION",
     "HUB_APP_MANIFEST",
     "HUB_APP_NAME",
     "HUB_APP_VERSION",
     "HubResolver",
     "PaperLoader",
     "build_hub_resolver",
+    "derive_wrapper_manifest",
 ]

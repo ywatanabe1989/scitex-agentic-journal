@@ -19,4 +19,22 @@ except PackageNotFoundError:  # pragma: no cover - source-tree fallback
     # are not yet registered with importlib.metadata. Audit rule PA-203.
     __version__ = "0.0.0+local"
 
-__all__ = ["__version__"]
+
+# M4 paper-level re-review badge — agentic-journal → live-paper contract.
+# Re-exported at the package top so a hub-side resolver writes
+# ``from scitex_agentic_journal import resolve_badge_for_paper`` instead
+# of digging into the underscored submodule.
+from scitex_agentic_journal._re_review_badge import (
+    ReReviewBadge,
+    ReReviewStatus,
+    resolve_badge_for_paper,
+    verdict_to_status,
+)
+
+__all__ = [
+    "ReReviewBadge",
+    "ReReviewStatus",
+    "__version__",
+    "resolve_badge_for_paper",
+    "verdict_to_status",
+]

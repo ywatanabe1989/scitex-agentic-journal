@@ -212,6 +212,18 @@ from scitex_agentic_journal._cli._publish import register_publish_command
 register_publish_command(main)
 
 
+# `hub-manifest` subcommand (M4 path B — hub-app-publisher CLI).
+# Mirrors live-paper PR #45's `hub-manifest` verb verbatim so the
+# scitex-hub scaffolder can shell-out uniformly to both upstream
+# packages; lives in `_cli._hub_manifest` per the same per-file
+# size discipline as the sibling verbs.
+from scitex_agentic_journal._cli._hub_manifest import (
+    register_hub_manifest_command,
+)
+
+register_hub_manifest_command(main)
+
+
 @main.command(name="list-python-apis")
 @click.option(
     "-v",

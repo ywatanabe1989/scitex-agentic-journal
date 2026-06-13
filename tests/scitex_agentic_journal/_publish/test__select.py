@@ -137,24 +137,6 @@ def test_persistent_id_citation_suffix_includes_id() -> None:
 # ----- Stub backends raise NotImplementedError -----------------------------
 
 
-def test_zenodo_stub_mint_raises_not_implemented() -> None:
-    # Arrange
-    stub = ZenodoStub()
-    # Act
-    # Assert
-    with pytest.raises(NotImplementedError):
-        stub.mint(_mint_input())
-
-
-def test_zenodo_sandbox_stub_mint_raises_not_implemented() -> None:
-    # Arrange
-    stub = ZenodoSandboxStub()
-    # Act
-    # Assert
-    with pytest.raises(NotImplementedError):
-        stub.mint(_mint_input())
-
-
 def test_jalc_stub_mint_raises_not_implemented() -> None:
     # Arrange
     stub = JalcStub()

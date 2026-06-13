@@ -61,6 +61,17 @@ HUB_APP_MANIFEST: Final[dict[str, Any]] = {
         "scitex_hub.apps": (
             f"{HUB_APP_NAME}={HUB_APP_NAME}.urls:urlpatterns"
         ),
+        # ``scitex_hub.app_config`` is the orthogonal EP key —
+        # exposes the upstream Django ``AppConfig`` so the hub server
+        # can register signals / app-ready hooks without going through
+        # the wrapper's URL surface. proj-scitex-hub confirmed both
+        # keys are honoured (2026-06-13 EP-shape Q&A relayed via
+        # proj-scitex-live-paper msg 9102ba02); shipping both for
+        # parity with the live-paper-side adoption.
+        "scitex_hub.app_config": (
+            f"{HUB_APP_NAME}="
+            "scitex_agentic_journal._django.apps:SciTeXAgenticJournalConfig"
+        ),
     },
     "requires": [
         # The wrapper depends on the upstream journal package + on

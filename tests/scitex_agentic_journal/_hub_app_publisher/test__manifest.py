@@ -83,6 +83,25 @@ def test_manifest_entry_points_points_at_wrapper_url_patterns() -> None:
     assert entry == expected
 
 
+def test_manifest_entry_points_exposes_app_config_for_signals_hook() -> None:
+    """``scitex_hub.app_config`` is the orthogonal EP key
+    proj-scitex-hub confirmed honours an upstream Django ``AppConfig``
+    (2026-06-13 EP-shape Q&A relayed via proj-scitex-live-paper
+    msg 9102ba02). Shipping it here gives the hub server a hook for
+    ready-time signals / app-init without going through the wrapper's
+    URL surface.
+    """
+    # Arrange
+    expected = (
+        f"{HUB_APP_NAME}="
+        "scitex_agentic_journal._django.apps:SciTeXAgenticJournalConfig"
+    )
+    # Act
+    entry = HUB_APP_MANIFEST["entry_points"]["scitex_hub.app_config"]
+    # Assert
+    assert entry == expected
+
+
 def test_manifest_requires_lists_upstream_agentic_journal_package() -> None:
     """The wrapper depends on the upstream journal package so the
     registry installer pulls it in alongside the wrapper."""

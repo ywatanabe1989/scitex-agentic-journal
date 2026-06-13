@@ -184,12 +184,15 @@ def test_mint_for_submission_raises_mint_load_error_when_submission_dir_missing(
     tmp_path: Path,
 ) -> None:
     # Arrange — no gate1.json on disk.
-    # Act / Assert
-    with pytest.raises(MintLoadError):
+    home = tmp_path
+    # Act
+    ctx = pytest.raises(MintLoadError)
+    # Assert
+    with ctx:
         mint_for_submission(
             "sub_2026_06_13_missing",
             backend="internal",
-            home=tmp_path,
+            home=home,
             now=_FIXED_TIME,
         )
 
@@ -200,8 +203,10 @@ def test_mint_for_submission_raises_mint_load_error_when_gate1_json_missing(
     """Submission dir exists but no gate1.json → MintLoadError."""
     # Arrange
     (tmp_path / "submissions" / "sub_2026_06_13_emptydir").mkdir(parents=True)
-    # Act / Assert
-    with pytest.raises(MintLoadError):
+    # Act
+    ctx = pytest.raises(MintLoadError)
+    # Assert
+    with ctx:
         mint_for_submission(
             "sub_2026_06_13_emptydir",
             backend="internal",
@@ -217,8 +222,10 @@ def test_mint_for_submission_raises_mint_load_error_when_gate1_json_is_garbage(
     submission_dir = tmp_path / "submissions" / "sub_2026_06_13_garbage"
     submission_dir.mkdir(parents=True)
     (submission_dir / "gate1.json").write_text("not json", encoding="utf-8")
-    # Act / Assert
-    with pytest.raises(MintLoadError):
+    # Act
+    ctx = pytest.raises(MintLoadError)
+    # Assert
+    with ctx:
         mint_for_submission(
             "sub_2026_06_13_garbage",
             backend="internal",

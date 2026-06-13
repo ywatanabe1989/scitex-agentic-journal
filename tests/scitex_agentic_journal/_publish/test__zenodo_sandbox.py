@@ -37,30 +37,43 @@ def _mint_input() -> MintInput:
 
 # ---------------------------------------------------------------------------
 # Hermetic — no token → clear RuntimeError.
+#
+# The "no token" tests assume ``SCITEX_AJ_ZENODO_SANDBOX_TOKEN`` is absent
+# from the test environment (it is in CI; developers running locally with
+# it exported get an env-gated skip). The audit (PA-306 §3) forbids the
+# ``monkeypatch`` fixture, so we use env-presence checks rather than env
+# mutation — the same pattern the M1 ``_submit`` test uses to gate
+# network opt-in.
 # ---------------------------------------------------------------------------
 
 
-def test_zenodo_sandbox_mint_without_token_raises_runtime_error(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_zenodo_sandbox_mint_without_token_raises_runtime_error() -> None:
+    if os.environ.get("SCITEX_AJ_ZENODO_SANDBOX_TOKEN"):
+        pytest.skip(
+            "SCITEX_AJ_ZENODO_SANDBOX_TOKEN is set; this test asserts the "
+            "no-token failure path"
+        )
     # Arrange
-    monkeypatch.delenv("SCITEX_AJ_ZENODO_SANDBOX_TOKEN", raising=False)
     stub = ZenodoSandboxStub()
-    # Act / Assert
-    with pytest.raises(RuntimeError):
+    # Act
+    ctx = pytest.raises(RuntimeError)
+    # Assert
+    with ctx:
         stub.mint(_mint_input())
 
 
-def test_zenodo_sandbox_mint_without_token_message_names_env_var(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_zenodo_sandbox_mint_without_token_message_names_env_var() -> None:
     """The error text must guide the operator to the missing env var.
 
     M4 acceptance: "If token missing, raise a clear RuntimeError
     ('set SCITEX_AJ_ZENODO_SANDBOX_TOKEN to enable sandbox minting')".
     """
+    if os.environ.get("SCITEX_AJ_ZENODO_SANDBOX_TOKEN"):
+        pytest.skip(
+            "SCITEX_AJ_ZENODO_SANDBOX_TOKEN is set; this test asserts the "
+            "no-token failure-message path"
+        )
     # Arrange
-    monkeypatch.delenv("SCITEX_AJ_ZENODO_SANDBOX_TOKEN", raising=False)
     stub = ZenodoSandboxStub()
     captured: RuntimeError | None = None
     # Act

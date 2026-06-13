@@ -18,14 +18,21 @@ real model output:
 
 * reproducibility: ``passed=True``, ``sandbox_image='local-deterministic'``
   with a note that no sandbox actually ran.
-* claim_verify: empty triage — the runner does not re-run
-  ``clew claim verify`` from here; the Gate-1 verdict already
-  carries that result.
+* claim_verify: echo the Gate-1 ``clew claim verify`` triage — the
+  runner does not re-run ``clew`` from here; the Gate-1 verdict
+  already carries that result and we forward it so downstream rules
+  (M3 ``claim_verify_zero_green``) have something to evaluate. If
+  the gate-1 record cannot be located the report degrades to the
+  honest "empty triage" fallback.
 * novelty: ``overlap_score=0.0`` (i.e. no signal), no neighbours.
 * methodology: empty :class:`Criticism` tuple, ``Severity.NONE``.
 """
 
 from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
 
 from scitex_agentic_journal._review._rubric import SubReportKind
 from scitex_agentic_journal._review._types import (
@@ -45,6 +52,36 @@ _NOTE = (
     "structural pipeline development; replace with a live "
     "Qwen/Spartan adapter for an editorial decision."
 )
+
+
+def _gate1_claim_triage(
+    submission_id: str,
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Best-effort echo of the Gate-1 clew claim triage.
+
+    Returns ``(green_claim_ids, red_claim_ids)``. Resolution mirrors
+    :func:`scitex_agentic_journal._submit._persist._submission_home`:
+    ``$SCITEX_AGENTIC_JOURNAL_HOME`` then
+    ``~/.scitex/agentic-journal``. Any error (no env, no file, bad
+    JSON, missing keys) collapses to two empty tuples — the honest
+    "I have no signal" fallback that keeps the adapter callable
+    even when called outside the canonical submission home.
+    """
+    home_env = os.environ.get("SCITEX_AGENTIC_JOURNAL_HOME")
+    home = Path(home_env).expanduser().resolve() if home_env else (
+        Path.home() / ".scitex" / "agentic-journal"
+    )
+    gate1_path = home / "submissions" / submission_id / "gate1.json"
+    try:
+        payload = json.loads(gate1_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return (), ()
+    clew = payload.get("clew_verification") if isinstance(payload, dict) else None
+    if not isinstance(clew, dict):
+        return (), ()
+    green = tuple(str(c) for c in clew.get("green_claims", ()) if isinstance(c, str))
+    red = tuple(str(c) for c in clew.get("red_claims", ()) if isinstance(c, str))
+    return green, red
 
 
 class LocalDeterministicAdapter:
@@ -76,12 +113,13 @@ class LocalDeterministicAdapter:
                 ),
             )
         if kind is SubReportKind.CLAIM_VERIFY:
+            green, red = _gate1_claim_triage(inputs.submission_id)
             return ReviewSubReport(
                 kind=kind,
                 payload=ClaimVerifyReport(
-                    green_claim_ids=(),
+                    green_claim_ids=green,
                     yellow_claim_ids=(),
-                    red_claim_ids=(),
+                    red_claim_ids=red,
                 ),
             )
         if kind is SubReportKind.NOVELTY:

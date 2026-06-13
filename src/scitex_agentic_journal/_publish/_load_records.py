@@ -189,7 +189,19 @@ def load_submission_records(
             "top-level 'content_hash' — re-run "
             "`scitex-agentic-journal decide`."
         )
-    verdict = decision.get("verdict")
+    # The M3 persister puts ``verdict`` inside the ``record`` block (it
+    # is a typed-record field, not envelope metadata). Read it there
+    # first; fall back to the top level so older synthetic records
+    # (and the M5 mocks built before M3 landed in develop) keep
+    # loading. Either location wins; both is illegal only if they
+    # disagree, in which case we trust the nested record because that
+    # is what the persister actually writes today.
+    record_block = decision.get("record") if isinstance(decision.get("record"), dict) else None
+    verdict = None
+    if record_block is not None:
+        verdict = record_block.get("verdict")
+    if verdict is None:
+        verdict = decision.get("verdict")
     if verdict != "accept":
         raise PublishLoadError(
             f"submission {submission_id} cannot be published: "
@@ -208,7 +220,16 @@ def load_submission_records(
         ),
         role="persistent_id.json",
     )
-    persistent_id = minted.get("persistent_id")
+    # Same pattern as ``decision.json`` above: the M4 persister wraps
+    # the typed record under a ``record:`` block so ``persistent_id``
+    # is nested. Read there first, top-level fall back for the M5
+    # pre-M4 synthetic mocks.
+    record_block = minted.get("record") if isinstance(minted.get("record"), dict) else None
+    persistent_id = None
+    if record_block is not None:
+        persistent_id = record_block.get("persistent_id")
+    if not isinstance(persistent_id, str) or not persistent_id:
+        persistent_id = minted.get("persistent_id")
     if not isinstance(persistent_id, str) or not persistent_id:
         raise PublishLoadError(
             f"persistent_id.json at {persistent_id_path} is missing "

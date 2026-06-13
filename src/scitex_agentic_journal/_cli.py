@@ -186,20 +186,42 @@ def main(ctx: click.Context, as_json: bool, help_recursive: bool) -> None:
     type=click.Path(exists=True, file_okay=False, dir_okay=True),
 )
 def submit(bundle_dir: str) -> None:
-    """Submit a manuscript bundle through Gate-1 (orchestrator stub).
+    """Submit a manuscript bundle through Gate-1.
 
-    The wiring of Gate-1 components (#2 ORCID, #3 code repo, #4 Clew
-    DAG) into a single CLI verdict is tracked by issue #5 (M1 CLI).
+    Loads ``<bundle>/bundle.yaml``, runs the three structural checks
+    (ORCID #2, code-repo #3, Clew DAG #4) in declared order, persists
+    the verdict under ``$SCITEX_AGENTIC_JOURNAL_HOME/submissions/<id>/``,
+    and prints ``GATE-1 PASS submission_id=...`` on success.
+
+    On any structural failure prints a single-line ``GATE-1 FAIL
+    [<check>]: <reason> -- <detail>`` and exits non-zero, with no
+    Python traceback.
 
     Example:
 
       $ scitex-agentic-journal submit ./paper/
-      GATE-1 PASS submission_id=...
+      GATE-1 PASS submission_id=sub_2026_06_13_abc123
     """
-    raise click.ClickException(
-        "M1 CLI orchestrator is not implemented yet — see issue #5 "
-        f"(bundle_dir={bundle_dir!r})."
+    from scitex_agentic_journal._submit import (
+        Gate1Failure,
+        SubmissionLoadError,
+        load_submission,
+        persist_verdict,
+        run_gate1,
     )
+
+    try:
+        submission = load_submission(bundle_dir)
+    except SubmissionLoadError as e:
+        raise click.ClickException(str(e)) from e
+    try:
+        verdict = run_gate1(submission)
+    except Gate1Failure as f:
+        # `GateFailure.__str__` already produces the canonical
+        # `GATE-1 FAIL [<check>]: <reason> -- <detail>` line.
+        raise click.ClickException(str(f.wrapped)) from f
+    persisted = persist_verdict(verdict)
+    click.echo(f"GATE-1 PASS submission_id={persisted.submission_id}")
 
 
 @main.command(name="review")

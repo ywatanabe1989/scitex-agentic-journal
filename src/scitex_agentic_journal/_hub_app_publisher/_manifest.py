@@ -18,8 +18,18 @@ from __future__ import annotations
 from typing import Any, Final
 
 
-HUB_APP_NAME: Final[str] = "scitex_agentic_journal_hub_app"
-"""The package name the user-published wrapper will register under."""
+HUB_APP_NAME: Final[str] = "scitex-agentic-journal"
+"""The upstream pip distribution name. Locked to
+``HUB_APP_MANIFEST["name"]`` so the constant matches what
+``pip install <name>`` resolves and what the hub registry shows in
+its app card. Convention agreed cross-package with
+``scitex-live-paper`` (msg fcffcdaa, 2026-06-13)."""
+
+HUB_WRAPPER_MODULE: Final[str] = "scitex_agentic_journal_hub_app"
+"""The Python module name of the user-published wrapper. Derives
+trivially from the pip name (`-` → `_` + ``_hub_app`` suffix). Used
+to construct entry-point targets without coupling them to the pip
+name's hyphen shape (Python module references cannot contain ``-``)."""
 
 HUB_APP_VERSION: Final[str] = "0.1.0-alpha"
 """Wrapper-app version — bumped independently of the upstream
@@ -55,21 +65,20 @@ HUB_APP_MANIFEST: Final[dict[str, Any]] = {
     "python_requires": HUB_APP_PYTHON_REQUIRES,
     "entry_points": {
         # ``scitex_hub.apps`` is the discovery point the hub uses to
-        # find an app's Django URLConf. The wrapper's ``urls`` module
-        # imports ``scitex_agentic_journal._django.urls`` and re-exports
-        # ``urlpatterns`` wrapped by ``mount(resolver=...)``.
+        # find an app's Django URLConf. The target is the wrapper's
+        # ``urls`` module — bare ``module:attr`` shape (no leading
+        # ``name=`` prefix; the entry-point name is the dict key).
+        # parity with live-paper PR #44 (msg fcffcdaa, 2026-06-13).
         "scitex_hub.apps": (
-            f"{HUB_APP_NAME}={HUB_APP_NAME}.urls:urlpatterns"
+            f"{HUB_WRAPPER_MODULE}.urls:urlpatterns"
         ),
         # ``scitex_hub.app_config`` is the orthogonal EP key —
         # exposes the upstream Django ``AppConfig`` so the hub server
         # can register signals / app-ready hooks without going through
-        # the wrapper's URL surface. proj-scitex-hub confirmed both
-        # keys are honoured (2026-06-13 EP-shape Q&A relayed via
-        # proj-scitex-live-paper msg 9102ba02); shipping both for
-        # parity with the live-paper-side adoption.
+        # the wrapper's URL surface. Lives on the upstream module path
+        # (``scitex_agentic_journal._django.apps``) so the wrapper
+        # never has to redeclare it.
         "scitex_hub.app_config": (
-            f"{HUB_APP_NAME}="
             "scitex_agentic_journal._django.apps:SciTeXAgenticJournalConfig"
         ),
     },

@@ -16,27 +16,48 @@ from scitex_agentic_journal._hub_app_publisher import (
     HUB_APP_MANIFEST,
     HUB_APP_NAME,
     HUB_APP_VERSION,
+    HUB_WRAPPER_MODULE,
 )
 
 
-def test_manifest_name_matches_published_package_name() -> None:
+def test_hub_app_name_is_the_upstream_pip_distribution_name() -> None:
+    """Convention agreed with proj-scitex-live-paper (msg fcffcdaa,
+    2026-06-13): ``HUB_APP_NAME`` is the upstream pip distribution
+    name (with hyphens), NOT the wrapper module name. Invariant
+    ``HUB_APP_NAME == HUB_APP_MANIFEST["name"]`` keeps it locked.
+    """
     # Arrange
-    expected = "scitex_agentic_journal_hub_app"
+    expected = "scitex-agentic-journal"
     # Act
-    name = HUB_APP_MANIFEST["name"]
+    name = HUB_APP_NAME
     # Assert
     assert name == expected
 
 
-def test_manifest_name_reuses_hub_app_name_constant() -> None:
-    """``HUB_APP_NAME`` is the single source of truth for the wrapper
-    package name; the manifest MUST point at the same constant."""
+def test_manifest_name_equals_hub_app_name_invariant() -> None:
+    """The invariant the canonical convention preserves — the manifest
+    ``name`` field is the same string as ``HUB_APP_NAME`` so a single
+    bump rolls through both."""
     # Arrange
     constant = HUB_APP_NAME
     # Act
     manifest_name = HUB_APP_MANIFEST["name"]
     # Assert
     assert manifest_name == constant
+
+
+def test_hub_wrapper_module_is_python_safe_form_of_pip_name() -> None:
+    """The wrapper's importable Python module name. Derived from the
+    pip name with hyphens collapsed to underscores plus the
+    ``_hub_app`` suffix per ADR-0002. Kept as its own constant
+    because Python module references in entry-points cannot carry
+    hyphens, so we can't reuse ``HUB_APP_NAME`` directly."""
+    # Arrange
+    expected = "scitex_agentic_journal_hub_app"
+    # Act
+    module = HUB_WRAPPER_MODULE
+    # Assert
+    assert module == expected
 
 
 def test_manifest_version_reuses_hub_app_version_constant() -> None:
@@ -73,10 +94,10 @@ def test_manifest_python_requires_mirrors_upstream_constraint() -> None:
 
 
 def test_manifest_entry_points_points_at_wrapper_url_patterns() -> None:
+    """Bare ``module:attr`` target (no leading ``name=`` prefix —
+    parity with live-paper PR #44, msg fcffcdaa)."""
     # Arrange
-    expected = (
-        f"{HUB_APP_NAME}={HUB_APP_NAME}.urls:urlpatterns"
-    )
+    expected = f"{HUB_WRAPPER_MODULE}.urls:urlpatterns"
     # Act
     entry = HUB_APP_MANIFEST["entry_points"]["scitex_hub.apps"]
     # Assert
@@ -87,13 +108,12 @@ def test_manifest_entry_points_exposes_app_config_for_signals_hook() -> None:
     """``scitex_hub.app_config`` is the orthogonal EP key
     proj-scitex-hub confirmed honours an upstream Django ``AppConfig``
     (2026-06-13 EP-shape Q&A relayed via proj-scitex-live-paper
-    msg 9102ba02). Shipping it here gives the hub server a hook for
-    ready-time signals / app-init without going through the wrapper's
-    URL surface.
+    msg 9102ba02). Bare ``module:attr`` target on the upstream
+    module path so the wrapper does not have to redeclare the
+    AppConfig.
     """
     # Arrange
     expected = (
-        f"{HUB_APP_NAME}="
         "scitex_agentic_journal._django.apps:SciTeXAgenticJournalConfig"
     )
     # Act

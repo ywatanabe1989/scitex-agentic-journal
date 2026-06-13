@@ -46,6 +46,7 @@ from scitex_agentic_journal._hub_app_publisher._manifest import (
     HUB_APP_MANIFEST,
     HUB_APP_NAME,
     HUB_APP_VERSION,
+    HUB_WRAPPER_MODULE,
 )
 from scitex_agentic_journal._hub_app_publisher._resolver_adapter import (
     BundleContextFactory,
@@ -60,6 +61,7 @@ __all__ = [
     "HUB_APP_MANIFEST",
     "HUB_APP_NAME",
     "HUB_APP_VERSION",
+    "HUB_WRAPPER_MODULE",
     "HubResolver",
     "PaperLoader",
     "build_hub_resolver",

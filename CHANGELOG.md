@@ -5,6 +5,73 @@ All notable changes to `scitex-agentic-journal` are documented in this file.
 ## [Unreleased]
 
 ### Added
+- M5 publish hand-off (#9 → PR #27): `_publish.publish_submission`,
+  `_publish.LocalFilesystemLivePaperPort` (default in-process port that
+  writes the Live Paper bundle envelope to
+  `<home>/published/<submission_id>/bundle.json`),
+  `_publish.RemoteLivePaperPortStub` (NotImplementedError stub for the
+  future HTTP/MCP port), `_publish.load_submission_records` +
+  `PublishLoadError` (refuses to publish unless gate1/review/decision/
+  persistent_id are all on disk and the decision verdict is `accept`).
+  CLI: `scitex-agentic-journal publish <submission-id>` with the
+  audit-§6 mutating-verb flags `--dry-run` / `--yes`. Prints
+  `PUBLISHED submission_id=... viewer_url=... persistent_id=...` on
+  success.
+- M4 persistent-ID minting (#8 → PR #26): `_publish.mint_for_submission`
+  + `MintLoadError` (orchestrates a mint over a persisted Gate-1
+  record), `_publish.persist_persistent_id` + `PersistedPersistentId`
+  (drops `persistent_id.json` next to `gate1.json` / `review.json` /
+  `decision.json`). `_publish._zenodo.ZenodoSandboxStub` now mints
+  against the real `sandbox.zenodo.org` REST API over real HTTP — token
+  from `SCITEX_AJ_ZENODO_SANDBOX_TOKEN`. `ZenodoStub` (production)
+  shares the same HTTP code path against `zenodo.org` when
+  `SCITEX_AJ_ZENODO_TOKEN` is set; both raise loud `RuntimeError` on
+  missing token or non-2xx response (no silent fallback). The opt-in
+  network test exercises the sandbox round-trip when
+  `SCITEX_RUN_NETWORK_TESTS=1` + `SCITEX_AJ_ZENODO_SANDBOX_TOKEN` are
+  both present.
+- M3 editorial decision engine (#7 → PR #28): `_decide.DecisionEngine`
+  produces `accept | revise | reject` over the immutable
+  `ReviewRecord` from M2. Rules-set is versioned + auditable
+  (`_decide/rules/v1.yaml`, bundled via
+  `[tool.setuptools.package-data]`) — no silent thresholds in code.
+  Every rule emits a `RuleHit` (both pass and fail) so the persisted
+  `decision.json` proves which rules passed alongside which failed.
+  Verdict precedence: first failing reject rule wins reject; otherwise
+  first failing revise rule wins revise; otherwise accept.
+  `_decide.persist_decision` + `PersistedDecision` drop
+  `decision.json` next to `gate1.json` / `review.json`. CLI:
+  `scitex-agentic-journal decide <submission-id>` prints
+  `DECISION submission_id=... verdict=... rules_version=... content_hash=...`.
+- M2 reviewer-agent harness (#6 → PR #25): `_review.ReviewRunner` runs
+  all four ARA sub-reports (reproducibility, claim verify, novelty,
+  methodology) against one submission in rubric order via a pluggable
+  `ReviewerAdapter` protocol. Ships `LocalDeterministicAdapter` (the
+  in-memory dev/test adapter) and `QwenAdapterStub` (NotImplementedError
+  placeholder until the live endpoint is wired). `_review.persist_review`
+  + `PersistedReview` write `review.json` (sha256 content_hash +
+  `written_at_utc`) next to `gate1.json`. CLI:
+  `scitex-agentic-journal review <submission-id> [--adapter local]
+  [--prompts-version v1]` prints `REVIEW DONE submission_id=...
+  adapter=... content_hash=...`.
+- M1 CLI orchestrator (#5 → PR #24): `_submit.run_gate1` runs the three
+  Gate-1 checks (ORCID → code-repo → Clew DAG) in declared order and
+  short-circuits on the first failure with a structured `Gate1Failure`
+  wrapping the underlying `GateFailure`. `_submit.persist_verdict` +
+  `PersistedSubmission` mint a sortable, opaque submission id
+  (`sub_YYYY_MM_DD_<6-hex>`) and drop `gate1.json` under
+  `$SCITEX_AGENTIC_JOURNAL_HOME/submissions/<id>/`. CLI:
+  `scitex-agentic-journal submit <bundle-dir>` prints
+  `GATE-1 PASS submission_id=...` on success and one structured
+  `GATE-1 FAIL [<check>]: <reason> -- <detail>` line on failure.
+- M1.3 Clew-DAG verification (#4 → PR #21): `_gate1.verify_clew_dag`
+  shells out to the real `clew claim verify` binary against the
+  bundled DAG and returns a `ClewVerification` recording the green /
+  red claim ids and total claim count. Loud `GateFailure` when no
+  green claim is present, when `clew` is missing from PATH, or when
+  the DAG directory is malformed. Opt-in real test gated on
+  `SCITEX_RUN_CLEW_TESTS=1` + `clew` on PATH.
+
 - `_gate1.clone_code_repo(repo_url, destination, *, depth=1, ref=None,
   timeout_s=60.0)` — second slice of the M1 submission gate. Shells out
   to the real system `git` binary to shallow-clone the author's code

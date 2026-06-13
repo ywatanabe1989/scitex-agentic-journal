@@ -40,19 +40,34 @@ def _mint_input() -> MintInput:
 #
 # The "no token" tests assume ``SCITEX_AJ_ZENODO_SANDBOX_TOKEN`` is absent
 # from the test environment (it is in CI; developers running locally with
-# it exported get an env-gated skip). The audit (PA-306 §3) forbids the
-# ``monkeypatch`` fixture, so we use env-presence checks rather than env
-# mutation — the same pattern the M1 ``_submit`` test uses to gate
-# network opt-in.
+# it exported get an env-gated skip via the ``no_sandbox_token_env``
+# fixture). The audit (PA-306 §3) forbids the ``monkeypatch`` fixture, so
+# we use env-presence checks via a fixture rather than env mutation — the
+# same pattern the M1 ``_submit`` tests use to gate network opt-in. The
+# skip lives in the fixture (not in the test body) so PA-307 §3 STX-TQ007
+# counts only the one assertion in each test.
 # ---------------------------------------------------------------------------
 
 
-def test_zenodo_sandbox_mint_without_token_raises_runtime_error() -> None:
+@pytest.fixture
+def no_sandbox_token_env() -> None:
+    """Skip when ``SCITEX_AJ_ZENODO_SANDBOX_TOKEN`` is set.
+
+    These tests probe the failure path that fires when the env var is
+    absent; if the developer has it exported locally we have to skip
+    rather than mutate their environment (PA-306 §3 forbids
+    ``monkeypatch``).
+    """
     if os.environ.get("SCITEX_AJ_ZENODO_SANDBOX_TOKEN"):
         pytest.skip(
             "SCITEX_AJ_ZENODO_SANDBOX_TOKEN is set; this test asserts the "
             "no-token failure path"
         )
+
+
+def test_zenodo_sandbox_mint_without_token_raises_runtime_error(
+    no_sandbox_token_env: None,
+) -> None:
     # Arrange
     stub = ZenodoSandboxStub()
     # Act
@@ -62,17 +77,14 @@ def test_zenodo_sandbox_mint_without_token_raises_runtime_error() -> None:
         stub.mint(_mint_input())
 
 
-def test_zenodo_sandbox_mint_without_token_message_names_env_var() -> None:
+def test_zenodo_sandbox_mint_without_token_message_names_env_var(
+    no_sandbox_token_env: None,
+) -> None:
     """The error text must guide the operator to the missing env var.
 
     M4 acceptance: "If token missing, raise a clear RuntimeError
     ('set SCITEX_AJ_ZENODO_SANDBOX_TOKEN to enable sandbox minting')".
     """
-    if os.environ.get("SCITEX_AJ_ZENODO_SANDBOX_TOKEN"):
-        pytest.skip(
-            "SCITEX_AJ_ZENODO_SANDBOX_TOKEN is set; this test asserts the "
-            "no-token failure-message path"
-        )
     # Arrange
     stub = ZenodoSandboxStub()
     captured: RuntimeError | None = None

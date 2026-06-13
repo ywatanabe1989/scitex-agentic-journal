@@ -65,22 +65,24 @@ def register_hub_manifest_command(main_group: click.Group) -> None:
     ) -> None:
         """Print the scitex-hub workspace manifest as JSON.
 
-        Hub-side wrapper apps can regenerate the file via:
+        Hub-side wrapper apps regenerate ``manifest.json`` via this
+        verb so the upstream pip package stays the single source of
+        truth (cross-package mirror of ``scitex-live-paper
+        hub-manifest`` from live-paper PR #45).
 
-        \b
-            scitex-agentic-journal hub-manifest > manifest.json
-
-        The output is the v2.0.0 hub workspace UI shape — derived from
-        :data:`scitex_agentic_journal.HUB_APP_MANIFEST` via
+        The output is the v2.0.0 hub workspace UI shape — derived
+        from :data:`scitex_agentic_journal.HUB_APP_MANIFEST` via
         :func:`scitex_agentic_journal.derive_wrapper_manifest`.
         Default formatting is indented + ``sort_keys=True`` so
         successive runs produce stable, review-friendly diffs.
 
-        Useful per-wrapper overrides:
+        Example:
 
         \b
-            --label "Agentic Journal"
-            --subtitle "ARA-native AI-reviewed open publishing"
+            $ scitex-agentic-journal hub-manifest > manifest.json
+            $ scitex-agentic-journal hub-manifest --label "Agentic Journal" \\
+                --subtitle "ARA-native AI-reviewed open publishing"
+            $ scitex-agentic-journal hub-manifest --compact
         """
         import json as _json
 

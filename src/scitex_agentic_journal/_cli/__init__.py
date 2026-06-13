@@ -196,19 +196,12 @@ from scitex_agentic_journal._cli._review import register_review_command
 register_review_command(main)
 
 
-@main.command(name="decide")
-@click.argument("submission_id")
-def decide(submission_id: str) -> None:
-    """Apply the editorial decision engine to a review record.
+# `decide` subcommand (M3 — #7). Implementation lives in
+# `_cli._decide` (sibling submodule) so this module stays under
+# the harness's 512-line per-file ceiling.
+from scitex_agentic_journal._cli._decide import register_decide_command
 
-    Example:
-
-      $ scitex-agentic-journal decide sub_2026_06_12_abc123
-    """
-    raise click.ClickException(
-        "M3 decision engine is not implemented yet — see issue #7 "
-        f"(submission_id={submission_id!r})."
-    )
+register_decide_command(main)
 
 
 @main.command(name="publish")

@@ -113,6 +113,7 @@ include = ["scitex_agentic_journal*"]
     "_django/templates/**/*",
     "_django/static/**/*",
     "_review/prompts/**/*",
+    "_decide/rules/**/*",
     "_skills/**/*",
 ]
 

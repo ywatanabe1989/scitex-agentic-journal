@@ -12,6 +12,21 @@ This module only orchestrates. Actual LLM calls live behind a
 
 from __future__ import annotations
 
+from scitex_agentic_journal._review._adapters import (
+    ADAPTER_REGISTRY,
+    UnknownAdapterError,
+    list_adapter_names,
+    select_adapter,
+)
+from scitex_agentic_journal._review._load_gate1 import (
+    ReviewLoadError,
+    load_submission_inputs,
+)
+from scitex_agentic_journal._review._local_adapter import LocalDeterministicAdapter
+from scitex_agentic_journal._review._persist import (
+    PersistedReview,
+    persist_review,
+)
 from scitex_agentic_journal._review._qwen_adapter import QwenAdapterStub
 from scitex_agentic_journal._review._rubric import (
     ARA_RUBRIC_VERSION,
@@ -33,14 +48,18 @@ from scitex_agentic_journal._review._types import (
 )
 
 __all__ = [
+    "ADAPTER_REGISTRY",
     "ARA_RUBRIC_VERSION",
     "AraRubric",
     "ClaimVerifyReport",
     "Criticism",
+    "LocalDeterministicAdapter",
     "MethodologyReport",
     "NoveltyReport",
+    "PersistedReview",
     "QwenAdapterStub",
     "ReproducibilityReport",
+    "ReviewLoadError",
     "ReviewRecord",
     "ReviewRunner",
     "ReviewSubReport",
@@ -48,4 +67,9 @@ __all__ = [
     "Severity",
     "SubReportKind",
     "SubmissionInputs",
+    "UnknownAdapterError",
+    "list_adapter_names",
+    "load_submission_inputs",
+    "persist_review",
+    "select_adapter",
 ]
